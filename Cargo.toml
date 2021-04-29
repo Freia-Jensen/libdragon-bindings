@@ -1,0 +1,16 @@
+[package]
+name = "libdragon-bindings"
+version = "0.1.0"
+authors = ["Dagoth_Bob <bo3b@live.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bitfield = "0.13.2"
+cty = "0.2.1"
+volatile = "0.4.4"
+
+[build-dependencies]
+cc = { version = "1.0" }
+pkg-config = "0.3"

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"rust-analyzer.cargo.target": "mips-nintendo64-none.json",
+		"rust-analyzer.checkOnSave.enable": true,
+		"rust-analyzer.checkOnSave.target": "mips-nintendo64-none.json",
+		"rust-analyzer.checkOnSave.allTargets": false
+	}
+}

@@ -1,0 +1,4 @@
+cargo:rerun-if-changed=build.rs
+cargo:rustc-cfg=feature="restricted-std"
+cargo:rustc-env=STD_ENV_ARCH=mips
+cargo:rustc-cfg=backtrace_in_libstd
