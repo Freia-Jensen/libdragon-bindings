@@ -43,7 +43,7 @@ pub mod Audio {
 
     use crate::bindings;
 
-    pub type Frequency = i32;
+    pub type Frequency = c_int;
     pub type fill_buffer_callback = extern "C" fn(buffer: *mut c_short, numsamples: size_t);
 
     /// Initialize the audio subsystem.
@@ -52,7 +52,7 @@ pub mod Audio {
     /// and allocate a number of back buffers to write data to.
     ///
     /// Note: Before re-initializing the audio subsystem to a new playback frequency, remember to call audio_close.
-    pub fn init(frequency: Frequency, numbuffers: i32) {
+    pub fn init(frequency: Frequency, numbuffers: c_int) {
         unsafe {bindings::audio_init(frequency, numbuffers)}
     }
 
@@ -76,7 +76,7 @@ pub mod Audio {
     /// Note: This function will block until there is room to write an audio
     /// sample. If you do not want to block, check to see if there is room
     /// by calling audio_can_write.
-    pub fn write_buffer(buffer: &[i16]) {
+    pub fn write_buffer(buffer: &[c_short]) {
         unsafe { bindings::audio_write(buffer.as_ptr()) }
     }
 
@@ -85,7 +85,7 @@ pub mod Audio {
     /// This function will check to see if there are any buffers that are not
     /// full to write data to. If all buffers are full, wait until the AI has
     /// played back the next buffer in its queue and try writing again
-    pub fn can_write() -> i32 {
+    pub fn can_write() -> c_int {
         unsafe { return bindings::audio_can_write().extract_inner(); }
     }
 
@@ -120,7 +120,7 @@ pub mod Audio {
     /// Note: To get the number of bytes to allocate, multiply the return by 2 * sizeof( short )
     ///
     /// Returns: The number of stereo samples in an allocated buffer
-    pub fn get_buffer_length() -> i32 {
+    pub fn get_buffer_length() -> c_int {
         unsafe { return bindings::audio_get_buffer_length(); }
     }
 }
@@ -142,6 +142,8 @@ pub mod Audio {
 /// use clear(). Once the console is not needed or when the code wishes to switch to the display
 /// subsystem, clear() should be called to cleanly shut down the console support.
 pub mod Console {
+    use cty::*;
+
     use crate::bindings;
 
     #[repr(i32)]
@@ -150,11 +152,11 @@ pub mod Console {
         RenderAutomatic = 1
     }
 
-    pub const CONSOLE_WIDTH: i32 = 64; // Characters per line for console
-    pub const CONSOLE_HEIGHT: i32 = 28; // Lines per screen
-    pub const TAB_WIDTH: i32 = 4; // Needs to divide evenly into CONSOLE_WIDTH
-    pub const HORIZONTAL_PADDING: i32 = 64;
-    pub const VERTICAL_PADDING: i32 = 8;
+    pub const CONSOLE_WIDTH: c_int = 64; // Characters per line for console
+    pub const CONSOLE_HEIGHT: c_int = 28; // Lines per screen
+    pub const TAB_WIDTH: c_int = 4; // Needs to divide evenly into CONSOLE_WIDTH
+    pub const HORIZONTAL_PADDING: c_int = 64;
+    pub const VERTICAL_PADDING: c_int = 8;
 
     /// Initialize the console system. This will initialize the
     /// video properly, so a call to the display_init() function is not necessary.
@@ -174,7 +176,7 @@ pub mod Console {
     /// at a later date using render(). This is to allow a rendering
     /// interface somewhat analogous to curse's
     pub fn set_render_mode(mode: RenderMode) {
-        unsafe { bindings::console_set_render_mode(mode as i32); }
+        unsafe { bindings::console_set_render_mode(mode as c_int); }
     }
 
     /// Clear the console and set the virtual cursor back to the top left.
@@ -322,10 +324,10 @@ pub mod Controller {
         Controller4 = 3
     }
 
-    pub const CONTROLLER_1_INSERTED: i32 = 0xF000;
-    pub const CONTROLLER_2_INSERTED: i32 = 0x0F00;
-    pub const CONTROLLER_3_INSERTED: i32 = 0x00F0;
-    pub const CONTROLLER_4_INSERTED: i32 = 0x000F;
+    pub const CONTROLLER_1_INSERTED: c_int = 0xF000;
+    pub const CONTROLLER_2_INSERTED: c_int = 0x0F00;
+    pub const CONTROLLER_3_INSERTED: c_int = 0x00F0;
+    pub const CONTROLLER_4_INSERTED: c_int = 0x000F;
 
     /// Initialize the controller subsystem.
     pub fn init() {
@@ -341,7 +343,7 @@ pub mod Controller {
     }
 
     /// Read the controller button status immediately and return results to data.
-    pub fn read_gc_controller_data(data_out: &mut ControllerData, rumble: &mut [u8; 4]) {
+    pub fn read_gc_controller_data(data_out: &mut ControllerData, rumble: &mut [c_uchar; 4]) {
         unsafe { bindings::controller_read_gc(data_out, rumble); }
     }
 
@@ -355,7 +357,7 @@ pub mod Controller {
     /// Queries the controller interface and returns a bitmask specifying
     /// which controllers are present. See CONTROLLER_1_INSERTED,
     /// CONTROLLER_2_INSERTED, CONTROLLER_3_INSERTED and CONTROLLER_4_INSERTED.
-    pub fn get_controllers_present() -> i32 {
+    pub fn get_controllers_present() -> c_int {
         unsafe { return bindings::get_controllers_present(); }
     }
 
@@ -363,7 +365,7 @@ pub mod Controller {
     /// which controllers have recognized accessories present.
     /// See CONTROLLER_1_INSERTED, CONTROLLER_2_INSERTED, CONTROLLER_3_INSERTED
     /// and CONTROLLER_4_INSERTED.
-    pub fn get_accessories_present(data: &mut ControllerData) -> i32 {
+    pub fn get_accessories_present(data: &mut ControllerData) -> c_int {
         unsafe { return bindings::get_accessories_present(data); }
     }
 
@@ -407,7 +409,7 @@ pub mod Controller {
     /// conjunction with Controller::scan_controllers()
     pub fn get_dpad_direction(controller: ControllerNum) -> DPadDirection {
         unsafe {
-            return match bindings::get_dpad_direction(controller as i32) {
+            return match bindings::get_dpad_direction(controller as c_int) {
                 0 => DPadDirection::R,
                 1 => DPadDirection::UR,
                 2 => DPadDirection::U,
@@ -422,9 +424,9 @@ pub mod Controller {
     }
 
     /// Given a controller and an address, read 32 bytes from a mempak and return them in data.
-    pub fn read_mempak_address(controller: ControllerNum, address: u16, data_out: &mut [u8]) -> MemPakResult {
+    pub fn read_mempak_address(controller: ControllerNum, address: c_ushort, data_out: &mut [c_uchar]) -> MemPakResult {
         unsafe {
-            return match bindings::read_mempak_address(controller as i32, address, data_out.as_mut_ptr()) {
+            return match bindings::read_mempak_address(controller as c_int, address, data_out.as_mut_ptr()) {
                 0 => MemPakResult::Success,
                 -1 => MemPakResult::OutOfRange,
                 -2 => MemPakResult::NoMemPak,
@@ -435,9 +437,9 @@ pub mod Controller {
     }
 
     /// Given a controller and an address, write 32 bytes to a mempak from data.
-    pub fn write_mempak_address(controller: ControllerNum, address: u16, data_in: &mut [u8]) -> MemPakResult {
+    pub fn write_mempak_address(controller: ControllerNum, address: c_ushort, data_in: &mut [c_uchar]) -> MemPakResult {
         unsafe {
-            return match bindings::write_mempak_address(controller as i32, address, data_in.as_mut_ptr()) {
+            return match bindings::write_mempak_address(controller as c_int, address, data_in.as_mut_ptr()) {
                 0 => MemPakResult::Success,
                 -1 => MemPakResult::OutOfRange,
                 -2 => MemPakResult::NoMemPak,
@@ -450,7 +452,7 @@ pub mod Controller {
     /// Given a controller, identify the particular accessory type inserted.
     pub fn identify_accessory(controller: ControllerNum) -> AccessoryType {
         unsafe {
-            return match bindings::identify_accessory(controller as i32) {
+            return match bindings::identify_accessory(controller as c_int) {
                 0 => AccessoryType::None,
                 1 => AccessoryType::MemPak,
                 2 => AccessoryType::RumblePak,
@@ -462,12 +464,12 @@ pub mod Controller {
 
     /// Turn rumble on for a particular controller.
     pub fn rumble_start(controller: ControllerNum) {
-        unsafe { bindings::rumble_start(controller as i32); }
+        unsafe { bindings::rumble_start(controller as c_int); }
     }
 
     /// Turn rumble off for a particular controller.
     pub fn rumble_stop(controller: ControllerNum) {
-        unsafe { bindings::rumble_stop(controller as i32); }
+        unsafe { bindings::rumble_stop(controller as c_int); }
     }
 
     /// Send an arbitrary command to a controller and receive arbitrary data back <br>
@@ -479,10 +481,10 @@ pub mod Controller {
     /// bytes_out - The number of result bytes expected <br>
     /// input - The parameter bytes to send with the command <br>
     /// output - The result bytes returned by the operation
-    pub fn execute_raw_command(controller: ControllerNum, command: i32, bytes_in: i32, bytes_out: i32, input: &mut [u8], output: &mut [u8]) {
+    pub fn execute_raw_command(controller: ControllerNum, command: c_int, bytes_in: c_int, bytes_out: c_int, input: &mut [c_uchar], output: &mut [c_uchar]) {
         unsafe {
             bindings::execute_raw_command(
-                controller as i32,
+                controller as c_int,
                 command,
                 bytes_in,
                 bytes_out,
@@ -511,8 +513,8 @@ pub mod Controller {
     /// block - Block to read data from. The N64 accesses eeprom in 8 byte blocks.
     ///
     /// buffer - Buffer to place the eight bytes read from EEPROM.
-    pub fn eeprom_read(block: i32) -> [u8; 8] {
-        let buffer: &mut [u8; 8] = &mut [0; 8];
+    pub fn eeprom_read(block: c_int) -> [c_uchar; 8] {
+        let buffer: &mut [c_uchar; 8] = &mut [0; 8];
 
         unsafe {
             bindings::eeprom_read(block, buffer.as_mut_ptr());
@@ -528,7 +530,7 @@ pub mod Controller {
     /// block - Block to write data to. The N64 accesses eeprom in 8 byte blocks.
     ///
     /// data - Eight bytes of data to write to block specified
-    pub fn eeprom_write(block: i32, data: &[u8; 8]) {
+    pub fn eeprom_write(block: c_int, data: &[c_uchar; 8]) {
         unsafe { bindings::eeprom_write(block, data.as_ptr()); }
     }
 }
@@ -610,16 +612,16 @@ pub mod MemoryPak {
         WriteError = -2
     }
 
-    pub const MEMPAK_BLOCK_SIZE: i32 = 256; // Size in bytes of a mempak block
-    pub const BLOCK_EMPTY: i32 = 0x03; // Block is empty
-    pub const BLOCK_LAST: i32 = 0x01; // Last block in the note
-    pub const BLOCK_VALID_FIRST: i32 = 0x05; // First valid block that can contain user data
-    pub const BLOCK_VALID_LAST: i32 = 0x7F; // Last valid block that can contain user data
+    pub const MEMPAK_BLOCK_SIZE: c_int = 256; // Size in bytes of a mempak block
+    pub const BLOCK_EMPTY: c_int = 0x03; // Block is empty
+    pub const BLOCK_LAST: c_int = 0x01; // Last block in the note
+    pub const BLOCK_VALID_FIRST: c_int = 0x05; // First valid block that can contain user data
+    pub const BLOCK_VALID_LAST: c_int = 0x7F; // Last valid block that can contain user data
 
     /// This will read a sector from a mempak. Sectors on mempaks are always 256 bytes in size.
-    pub fn read_sector(controller: ControllerNum, sector: i32, sector_data_out: &mut [u8]) -> ReadSectorResult {
+    pub fn read_sector(controller: ControllerNum, sector: c_int, sector_data_out: &mut [c_uchar]) -> ReadSectorResult {
         unsafe {
-            return match bindings::read_mempak_sector(controller as i32, sector, sector_data_out.as_mut_ptr()) {
+            return match bindings::read_mempak_sector(controller as c_int, sector, sector_data_out.as_mut_ptr()) {
                 0 => ReadSectorResult::ReadSuccessfully,
                 -1 => ReadSectorResult::BadSector,
                 -2 => ReadSectorResult::ErrorRead,
@@ -629,9 +631,9 @@ pub mod MemoryPak {
     }
 
     /// This will write a sector to a mempak. Sectors on mempaks are always 256 bytes in size.
-    pub fn write_sector(controller: ControllerNum, sector: i32, sector_data_in: &mut [u8]) -> WriteSectorResult {
+    pub fn write_sector(controller: ControllerNum, sector: c_int, sector_data_in: &mut [c_uchar]) -> WriteSectorResult {
         unsafe {
-            return match bindings::write_mempak_sector(controller as i32, sector, sector_data_in.as_mut_ptr()) {
+            return match bindings::write_mempak_sector(controller as c_int, sector, sector_data_in.as_mut_ptr()) {
                 0 => WriteSectorResult::WrittenSuccessfully,
                 -1 => WriteSectorResult::BadSector,
                 -2 => WriteSectorResult::WriteError,
@@ -643,7 +645,7 @@ pub mod MemoryPak {
     /// This function will return whether the mempak in a particular controller is formatted and valid.
     pub fn validate_mempak(controller: ControllerNum) -> ValidateResult {
         unsafe {
-            return match bindings::validate_mempak(controller as i32) {
+            return match bindings::validate_mempak(controller as c_int) {
                 0 => ValidateResult::Valid,
                 -2 => ValidateResult::NotPresent,
                 -3 => ValidateResult::BadMemPak,
@@ -656,15 +658,15 @@ pub mod MemoryPak {
     /// number of bytes free, multiply the return of this function by MEMPAK_BLOCK_SIZE.
     ///
     /// Returns the number of blocks free or a negative number on failure.
-    pub fn get_free_space(controller: ControllerNum) -> i32 {
-        unsafe { return bindings::get_mempak_free_space(controller as i32); }
+    pub fn get_free_space(controller: ControllerNum) -> c_int {
+        unsafe { return bindings::get_mempak_free_space(controller as c_int); }
     }
 
     /// Given an entry index (0-15), return the entry as found on the mempak.<br>
     /// If the entry is blank or invalid, the valid flag is cleared.
-    pub fn get_entry(controller: ControllerNum, entry: i32, entry_data: &mut EntryStructure) -> GetEntryResult {
+    pub fn get_entry(controller: ControllerNum, entry: c_int, entry_data: &mut EntryStructure) -> GetEntryResult {
         unsafe {
-            return match bindings::get_mempak_entry(controller as i32, entry, entry_data) {
+            return match bindings::get_mempak_entry(controller as c_int, entry, entry_data) {
                 0 => GetEntryResult::ReadSuccessfully,
                 -1 => GetEntryResult::BadEntry,
                 -2 => GetEntryResult::BadMemPak,
@@ -677,7 +679,7 @@ pub mod MemoryPak {
     /// the filesystem in case of a blank or corrupt mempak.
     pub fn format_mempak(controller: ControllerNum) -> FormatResult {
         unsafe {
-            return match bindings::format_mempak(controller as i32) {
+            return match bindings::format_mempak(controller as c_int) {
                 0 => FormatResult::FormattedSuccessfully,
                 -2 => FormatResult::BadMemPak,
                 bad => panic!("Invalid result from MemPak::format_mempak(): {}", bad)
@@ -689,9 +691,9 @@ pub mod MemoryPak {
     /// The calling function must ensure that enough room is available in the passed in buffer for
     /// the entire entry. The entry structure itself contains the number of blocks used to store the
     /// data which can be multiplied by MEMPAK_BLOCK_SIZE to calculate the size of the buffer needed.
-    pub fn read_entry_data(controller: ControllerNum, entry: &mut EntryStructure, data_out: &mut [u8]) -> ReadEntryDataResult {
+    pub fn read_entry_data(controller: ControllerNum, entry: &mut EntryStructure, data_out: &mut [c_uchar]) -> ReadEntryDataResult {
         unsafe {
-            return match bindings::read_mempak_entry_data(controller as i32, entry, data_out.as_mut_ptr()) {
+            return match bindings::read_mempak_entry_data(controller as c_int, entry, data_out.as_mut_ptr()) {
                 0 => ReadEntryDataResult::ReadSuccessfully,
                 -1 => ReadEntryDataResult::BadEntry,
                 -2 => ReadEntryDataResult::BadMemPak,
@@ -705,9 +707,9 @@ pub mod MemoryPak {
     /// writes the entry and associated data to the mempak. This function will not
     /// overwrite any existing user data. To update an existing entry, use delete_entry()
     /// followed by write_entry_data() with the same entry structure.
-    pub fn write_entry_data(controller: ControllerNum, entry: &mut EntryStructure, data_in: &mut [u8]) -> WriteEntryDataResult {
+    pub fn write_entry_data(controller: ControllerNum, entry: &mut EntryStructure, data_in: &mut [c_uchar]) -> WriteEntryDataResult {
         unsafe {
-            return match bindings::write_mempak_entry_data(controller as i32, entry, data_in.as_mut_ptr()) {
+            return match bindings::write_mempak_entry_data(controller as c_int, entry, data_in.as_mut_ptr()) {
                 0 => WriteEntryDataResult::WrittenSuccessfully,
                 -1 => WriteEntryDataResult::InvalidParameter,
                 -2 => WriteEntryDataResult::BadMemPak,
@@ -722,7 +724,7 @@ pub mod MemoryPak {
     /// Given a valid mempak entry fetched by get_entry() -- removes the entry and frees all associated blocks.
     pub fn delete_entry(controller: ControllerNum, entry: &mut EntryStructure) -> DeleteEntryResult {
         unsafe {
-            return match bindings::delete_mempak_entry(controller as i32, entry) {
+            return match bindings::delete_mempak_entry(controller as c_int, entry) {
                 0 => DeleteEntryResult::DeletedSuccessfully,
                 -1 => DeleteEntryResult::InvalidEntry,
                 -2 => DeleteEntryResult::BadMemPak,
@@ -825,7 +827,7 @@ pub mod TransferPak {
     /// Will also perform a series of checks to confirm transfer pak can be accessed reliably.
     pub fn init(controller: ControllerNum) -> TPakError {
         unsafe {
-            return match bindings::tpak_init(controller as i32) {
+            return match bindings::tpak_init(controller as c_int) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -843,9 +845,9 @@ pub mod TransferPak {
     /// Helper to set a transfer pak status or control setting. Be aware that for simplicity's sake,
     /// this writes the same value 32 times, and should therefore not be used for updating individual
     /// bytes in Save RAM.
-    pub fn set_value(controller: ControllerNum, address: u16, value: u8) -> TPakError {
+    pub fn set_value(controller: ControllerNum, address: c_ushort, value: c_uchar) -> TPakError {
         unsafe {
-            return match bindings::tpak_set_value(controller as i32, address, value) {
+            return match bindings::tpak_set_value(controller as c_int, address, value) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -861,9 +863,9 @@ pub mod TransferPak {
     /// Change transfer pak banked memory.
     ///
     /// Change the bank of address space that is available between transfer pak addresses 0xC000 and 0xFFFF
-    pub fn set_bank(controller: ControllerNum, bank: i32) -> TPakError {
+    pub fn set_bank(controller: ControllerNum, bank: c_int) -> TPakError {
         unsafe {
-            return match bindings::tpak_set_bank(controller as i32, bank) {
+            return match bindings::tpak_set_bank(controller as c_int, bank) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -879,7 +881,7 @@ pub mod TransferPak {
     /// Toggle transfer pak power state.
     pub fn set_power(controller: ControllerNum, power_state: bool) -> TPakError {
         unsafe {
-            return match bindings::tpak_set_power(controller as i32, power_state) {
+            return match bindings::tpak_set_power(controller as c_int, power_state) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -895,7 +897,7 @@ pub mod TransferPak {
     /// Set transfer pak access mode.
     pub fn set_access(controller: ControllerNum, access_state: bool) -> TPakError {
         unsafe {
-            return match bindings::tpak_set_access(controller as i32, access_state) {
+            return match bindings::tpak_set_access(controller as c_int, access_state) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -916,16 +918,16 @@ pub mod TransferPak {
     /// Bit 3: Reset detected - Indicates that the cartridge has been reset since the last IO <br>
     /// Bit 6: Cartridge presence - if not set, there is no cartridge in the transfer pak. <br>
     /// Bit 7: Power mode - a 1 indicates there is power to the transfer pak.
-    pub fn get_status(controller: ControllerNum) -> u8 {
+    pub fn get_status(controller: ControllerNum) -> c_uchar {
         unsafe {
-            return bindings::tpak_get_status(controller as i32);
+            return bindings::tpak_get_status(controller as c_int);
         }
     }
 
     /// Reads a gameboy cartridge header in to memory.
     pub fn get_cartridge_header(controller: ControllerNum, header_out: &mut GameboyCartridgeHeader) -> TPakError {
         unsafe {
-            return match bindings::tpak_get_cartridge_header(controller as i32, header_out) {
+            return match bindings::tpak_get_cartridge_header(controller as c_int, header_out) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -951,9 +953,9 @@ pub mod TransferPak {
     /// bank 2. This function does not account for cartridge bank switching, so to switch between MBC1
     /// RAM banks, for example, you'll need to switch to Tpak bank 1, and write to address 0xE000, which
     /// translates to address 0x6000 on the gameboy.
-    pub fn write(controller: ControllerNum, address: u16, data_in: &mut [u8], size: u16) -> TPakError {
+    pub fn write(controller: ControllerNum, address: c_ushort, data_in: &mut [c_uchar], size: c_ushort) -> TPakError {
         unsafe {
-            return match bindings::tpak_write(controller as i32, address, data_in.as_mut_ptr(), size) {
+            return match bindings::tpak_write(controller as c_int, address, data_in.as_mut_ptr(), size) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -967,9 +969,9 @@ pub mod TransferPak {
     }
 
     /// Read data from gameboy cartridge to a buffer.
-    pub fn read(controller: ControllerNum, address: u16, buffer_out: &mut [u8], size: u16) -> TPakError {
+    pub fn read(controller: ControllerNum, address: c_ushort, buffer_out: &mut [c_uchar], size: c_ushort) -> TPakError {
         unsafe {
-            return match bindings::tpak_read(controller as i32, address, buffer_out.as_mut_ptr(), size) {
+            return match bindings::tpak_read(controller as c_int, address, buffer_out.as_mut_ptr(), size) {
                 0 => TPakError::Success,
                 -1 => TPakError::InvalidArgument,
                 -2 => TPakError::NoTPak,
@@ -1023,7 +1025,7 @@ pub mod Display {
 
     /// Initialize video system. This sets up a double or triple buffered drawing surface
     /// which can be blitted or rendered to using software or hardware.
-    pub fn init(res: Resolution, bitdepth: BitDepth, no_buffers: u32, gamma: Gamma, aa: AntiAlias) {
+    pub fn init(res: Resolution, bitdepth: BitDepth, no_buffers: c_ulong, gamma: Gamma, aa: AntiAlias) {
         unsafe { bindings::display_init(res, bitdepth, no_buffers, gamma, aa); }
     }
 
@@ -1060,36 +1062,38 @@ pub mod Display {
 /// in the cartridge domain as it could collide with an in-progress DMA transfer or run
 /// into caching issues.
 pub mod DMA {
+    use cty::*;
+
     use crate::bindings;
 
     /// Write to a peripheral.
     ///
     /// This function should be used when writing to the cartridge.
-    pub fn write(ram_address_in: *mut (), pi_address: u64, length: u64) {
+    pub fn write(ram_address_in: *mut (), pi_address: c_ulong, length: c_ulong) {
         unsafe { bindings::dma_write(ram_address_in.cast(), pi_address, length); }
     }
 
     /// Read from a peripheral.
     ///
     /// This function should be used when reading from the cartridge.
-    pub fn read(ram_address_out: *mut (), pi_address: u64, length: u64) {
+    pub fn read(ram_address_out: *mut (), pi_address: c_ulong, length: c_ulong) {
         unsafe { bindings::dma_read(ram_address_out.cast(), pi_address, length); }
     }
 
     /// Return whether the DMA controller is currently busy.
     ///
     /// Returns: nonzero if the DMA controller is busy or 0 otherwise
-    pub fn get_busy() -> i32 {
+    pub fn get_busy() -> c_int {
         unsafe { return bindings::dma_busy().extract_inner(); }
     }
 
     /// Read a 32 bit integer from a peripheral.
-    pub fn io_read(pi_address: u32) -> u32 {
+    pub fn io_read(pi_address: c_ulong) -> c_ulong {
         unsafe { return bindings::io_read(pi_address); }
     }
 
     /// Write a 32 bit integer to a peripheral.
-    pub fn io_write(pi_address: u32, data: u32) {
+    pub fn io_write(pi_address: c_ulong, data: c_ulong) {
         unsafe { return bindings::io_write(pi_address, data); }
     }
 }
@@ -1125,9 +1129,11 @@ pub mod DMA {
 /// Files can be opened using both sets of API calls simultaneously as long
 /// as no more than four files are open at any one time.
 pub mod DragonFS {
+    use cty::*;
+
     use crate::bindings;
 
-    pub type DFSHandle = u32;
+    pub type DFSHandle = c_ulong;
 
     #[repr(i32)]
     #[derive(Clone, Copy)]
@@ -1146,7 +1152,7 @@ pub mod DragonFS {
     #[repr(C)]
     pub union Flag_Error {
         pub error: DFSResult,
-        pub flags: i32
+        pub flags: c_int
     }
 
     /// EOF = 1
@@ -1154,7 +1160,7 @@ pub mod DragonFS {
     #[repr(C)]
     pub union EOFResult {
         pub error: DFSResult,
-        pub eof: i32
+        pub eof: c_int
     }
 
     #[repr(C)]
@@ -1166,31 +1172,31 @@ pub mod DragonFS {
     #[repr(C)]
     pub union ReadResult {
         pub error: DFSResult,
-        pub num: i32
+        pub num: c_int
     }
 
     #[repr(C)]
     pub union TellResult {
         pub error: DFSResult,
-        pub offset: i32
+        pub offset: c_int
     }
 
     #[repr(C)]
     pub union SizeResult {
         pub error: DFSResult,
-        pub size: i32
+        pub size: c_int
     }
 
-    pub const DFS_DEFAULT_LOCATION: i64 = 0xB0101000;
-    pub const MAX_OPEN_FILES: i32 = 4;
-    pub const MAX_FILENAME_LEN: i32 = 243;
-    pub const MAX_DIRECTORY_DEPTH: i32 = 100;
-    pub const FLAGS_FILE: i32 = 0x0;
-    pub const FLAGS_DIR: i32 = 0x1;
-    pub const FLAGS_EOF: i32 = 0x2;
+    pub const DFS_DEFAULT_LOCATION: c_longlong = 0xB0101000;
+    pub const MAX_OPEN_FILES: c_int = 4;
+    pub const MAX_FILENAME_LEN: c_int = 243;
+    pub const MAX_DIRECTORY_DEPTH: c_int = 100;
+    pub const FLAGS_FILE: c_int = 0x0;
+    pub const FLAGS_DIR: c_int = 0x1;
+    pub const FLAGS_EOF: c_int = 0x2;
 
     /// Macro to extract the file type from a DragonFS file flag.
-    #[inline(always)] pub extern "C" fn FILETYPE(x: i32) -> i32 { return x & 3; }
+    #[inline(always)] pub extern "C" fn FILETYPE(x: c_int) -> c_int { return x & 3; }
 
     /// Initialize the filesystem.
     ///
@@ -1198,7 +1204,7 @@ pub mod DragonFS {
     /// will initialize the filesystem to read from cartridge space. This function
     /// will also register DragonFS with newlib so that standard POSIX file
     /// operations work with DragonFS.
-    pub fn init(base_fs_location: u32) -> DFSResult {
+    pub fn init(base_fs_location: c_ulong) -> DFSResult {
         unsafe {
             return match bindings::dfs_init(base_fs_location) {
                 0 => DFSResult::Success,
@@ -1217,7 +1223,7 @@ pub mod DragonFS {
     /// Supports absolute and relative
     ///
     /// Note: path must be null-terminated.
-    pub fn chdir(path: &[u8]) -> DFSResult {
+    pub fn chdir(path: &[c_uchar]) -> DFSResult {
         unsafe {
             return match bindings::dfs_chdir(path.as_ptr().cast()) {
                 0 => DFSResult::Success,
@@ -1238,7 +1244,7 @@ pub mod DragonFS {
     /// and copies the name into buffer.
     ///
     /// Note: path must be null-terminated.
-    pub fn dir_find_first(path: &[u8], buffer_out: &mut [i8]) -> Flag_Error {
+    pub fn dir_find_first(path: &[c_uchar], buffer_out: &mut [c_char]) -> Flag_Error {
         unsafe {
             return match bindings::dfs_dir_findfirst(path.as_ptr().cast(), buffer_out.as_mut_ptr()) {
                 x @ 0..=3 => Flag_Error { flags: x },
@@ -1275,7 +1281,7 @@ pub mod DragonFS {
     /// the file specified. Supports absolute and relative paths
     ///
     /// Note: path must be null-terminated.
-    pub fn open(path: &[u8]) -> OpenResult {
+    pub fn open(path: &[c_uchar]) -> OpenResult {
         unsafe {
             return match bindings::dfs_open(path.as_ptr().cast()) {
                 -1 => OpenResult{ error: DFSResult::BadInput},
@@ -1283,17 +1289,17 @@ pub mod DragonFS {
                 -3 => OpenResult{ error: DFSResult::BadFS},
                 -4 => OpenResult{ error: DFSResult::NoMem},
                 -5 => OpenResult{ error: DFSResult::BadHandle},
-                x @ i32::MIN..=-6 => panic!("Invalid result from DragonFS::open(): {}", x),
-                val => OpenResult{ handle: val as u32}
+                x @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::open(): {}", x),
+                val => OpenResult{ handle: val as c_ulong}
             };
         }
     }
 
     /// Read data from a file.
-    pub fn read(buffer_out: *const (), size: i32, count: i32, handle: DFSHandle) -> ReadResult {
+    pub fn read(buffer_out: *const (), size: c_int, count: c_int, handle: DFSHandle) -> ReadResult {
         unsafe {
             return match bindings::dfs_read(buffer_out.cast(), size, count, handle) {
-                x @ 0..=i32::MAX => ReadResult{ num: x },
+                x @ 0..=c_int::MAX => ReadResult{ num: x },
                 -1 => ReadResult{ error: DFSResult::BadInput},
                 -2 => ReadResult{ error: DFSResult::NoFile},
                 -3 => ReadResult{ error: DFSResult::BadFS},
@@ -1305,7 +1311,7 @@ pub mod DragonFS {
     }
 
     /// Seek to an offset in the file.
-    pub fn seek(handle: DFSHandle, offset: i32, origin: i32) -> DFSResult {
+    pub fn seek(handle: DFSHandle, offset: c_int, origin: c_int) -> DFSResult {
         unsafe {
             return match bindings::dfs_seek(handle, offset, origin) {
                 0 => DFSResult::Success,
@@ -1328,7 +1334,7 @@ pub mod DragonFS {
                 -3 => TellResult{ error: DFSResult::BadFS},
                 -4 => TellResult{ error: DFSResult::NoMem},
                 -5 => TellResult{ error: DFSResult::BadHandle},
-                x @ i32::MIN..=-6 => panic!("Invalid result from DragonFS::tell(): {}", x),
+                x @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::tell(): {}", x),
                 bad => TellResult{ offset: bad }
             };
         }
@@ -1374,7 +1380,7 @@ pub mod DragonFS {
                 -3 => SizeResult{ error: DFSResult::BadFS},
                 -4 => SizeResult{ error: DFSResult::NoMem},
                 -5 => SizeResult{ error: DFSResult::BadHandle},
-                x @ i32::MIN..=-6 => panic!("Invalid result from DragonFS::size(): {}", x),
+                x @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::size(): {}", x),
                 bad => SizeResult{ size: bad }
             };
         }
@@ -1417,7 +1423,7 @@ pub mod GraphicsEngine {
         pub a: c_uchar
     }
 
-    pub type N64Color = u32;
+    pub type N64Color = c_ulong;
 
     #[repr(C)]
     pub struct Sprite {
@@ -1431,7 +1437,7 @@ pub mod GraphicsEngine {
     }
 
     /// Return a 32-bit representation of an RGBA color.
-    pub fn make_color(r: i32, g: i32, b: i32, a: i32) -> N64Color {
+    pub fn make_color(r: c_int, g: c_int, b: c_int, a: c_int) -> N64Color {
         unsafe { return bindings::graphics_make_color(r, g, b, a); }
     }
 
@@ -1441,32 +1447,32 @@ pub mod GraphicsEngine {
     }
 
     /// Draw a pixel to a given display context.
-    pub fn draw_pixel(disp: DisplayContext, x: i32, y: i32, c: N64Color) {
+    pub fn draw_pixel(disp: DisplayContext, x: c_int, y: c_int, c: N64Color) {
         unsafe { bindings::graphics_draw_pixel(disp, x, y, c); }
     }
 
     /// Draw a pixel to a given display context with alpha support.
-    pub fn draw_pixel_trans(disp: DisplayContext, x: i32, y: i32, c: N64Color) {
+    pub fn draw_pixel_trans(disp: DisplayContext, x: c_int, y: c_int, c: N64Color) {
         unsafe { bindings::graphics_draw_pixel_trans(disp, x, y, c); }
     }
 
     /// Draw a line to a given display context.
-    pub fn draw_line(disp: DisplayContext, x0: i32, y0: i32, x1: i32, y1: i32, c: N64Color) {
+    pub fn draw_line(disp: DisplayContext, x0: c_int, y0: c_int, x1: c_int, y1: c_int, c: N64Color) {
         unsafe { bindings::graphics_draw_line(disp, x0, y0, x1, y1, c); }
     }
 
     /// Draw a line to a given display context with alpha support.
-    pub fn draw_line_trans(disp: DisplayContext, x0: i32, y0: i32, x1: i32, y1: i32, c: N64Color) {
+    pub fn draw_line_trans(disp: DisplayContext, x0: c_int, y0: c_int, x1: c_int, y1: c_int, c: N64Color) {
         unsafe { bindings::graphics_draw_line_trans(disp, x0, y0, x1, y1, c); }
     }
 
     /// Draw a filled rectangle to a display context.
-    pub fn draw_box(disp: DisplayContext, x: i32, y: i32, width: i32, height: i32, color: N64Color) {
+    pub fn draw_box(disp: DisplayContext, x: c_int, y: c_int, width: c_int, height: c_int, color: N64Color) {
         unsafe { bindings::graphics_draw_box(disp, x, y, width, height, color); }
     }
 
     /// Draw a filled rectangle to a display context.
-    pub fn draw_box_trans(disp: DisplayContext, x: i32, y: i32, width: i32, height: i32, color: N64Color) {
+    pub fn draw_box_trans(disp: DisplayContext, x: c_int, y: c_int, width: c_int, height: c_int, color: N64Color) {
         unsafe { bindings::graphics_draw_box_trans(disp, x, y, width, height, color); }
     }
 
@@ -1485,8 +1491,8 @@ pub mod GraphicsEngine {
     /// color is fully transparent, the font is drawn with no background. Otherwise,
     /// the font is drawn on a fully colored background. The foreground and background
     /// can be set using set_color().
-    pub fn draw_character(disp: DisplayContext, x: i32, y: i32, c: u8) {
-        unsafe { bindings::graphics_draw_character(disp, x, y, c as i8); }
+    pub fn draw_character(disp: DisplayContext, x: c_int, y: c_int, c: c_uchar) {
+        unsafe { bindings::graphics_draw_character(disp, x, y, c as c_char); }
     }
 
     /// Draw a null terminated string to a display context.
@@ -1502,7 +1508,7 @@ pub mod GraphicsEngine {
     /// background can be set using set_color().
     ///
     /// Note: msg must be null-terminated.
-    pub fn draw_text(disp: DisplayContext, x: i32, y: i32, msg: &[u8]) {
+    pub fn draw_text(disp: DisplayContext, x: c_int, y: c_int, msg: &[c_uchar]) {
         unsafe { bindings::graphics_draw_text(disp, x, y, msg.as_ptr().cast());
         }
     }
@@ -1511,7 +1517,7 @@ pub mod GraphicsEngine {
     ///
     /// Given a sprite structure, this function will draw a sprite to the display
     /// context with clipping support.
-    pub fn draw_sprite(disp: DisplayContext, x: i32, y: i32, sprite: &mut Sprite) {
+    pub fn draw_sprite(disp: DisplayContext, x: c_int, y: c_int, sprite: &mut Sprite) {
         unsafe { bindings::graphics_draw_sprite(disp, x, y, sprite); }
     }
 
@@ -1522,7 +1528,7 @@ pub mod GraphicsEngine {
     /// useful for software tilemapping. If a sprite was generated as a spritemap
     /// (it has more than one horizontal or vertical slice), this function can
     /// display a slice of the sprite as a standalone sprite.
-    pub fn draw_sprite_stride(disp: DisplayContext, x: i32, y: i32, sprite: &mut Sprite, offset: i32) {
+    pub fn draw_sprite_stride(disp: DisplayContext, x: c_int, y: c_int, sprite: &mut Sprite, offset: c_int) {
         unsafe { bindings::graphics_draw_sprite_stride(disp, x, y, sprite, offset); }
     }
 
@@ -1530,7 +1536,7 @@ pub mod GraphicsEngine {
     ///
     /// Given a sprite structure, this function will draw a sprite to the display
     /// context with clipping support.
-    pub fn draw_sprite_trans(disp: DisplayContext, x: i32, y: i32, sprite: &mut Sprite) {
+    pub fn draw_sprite_trans(disp: DisplayContext, x: c_int, y: c_int, sprite: &mut Sprite) {
         unsafe { bindings::graphics_draw_sprite_trans(disp, x, y, sprite); }
     }
 
@@ -1541,7 +1547,7 @@ pub mod GraphicsEngine {
     /// for software tilemapping. If a sprite was generated as a spritemap (it has
     /// more than one horizontal or vertical slice), this function can display a slice
     /// of the sprite as a standalone sprite.
-    pub fn draw_sprite_stride_trans(disp: DisplayContext, x: i32, y: i32, sprite: &mut Sprite, offset: i32) {
+    pub fn draw_sprite_stride_trans(disp: DisplayContext, x: c_int, y: c_int, sprite: &mut Sprite, offset: c_int) {
         unsafe { bindings::graphics_draw_sprite_trans_stride(disp, x, y, sprite, offset); }
     }
 }
@@ -1568,6 +1574,8 @@ pub mod GraphicsEngine {
 /// interrupts if interrupts were not enabled when calling disable_interrupts(). In this
 /// manner, it is safe to nest calls to disable and enable interrupts.
 pub mod Interrupt {
+    use cty::*;
+
     use crate::bindings;
 
     #[repr(C)]
@@ -1651,32 +1659,32 @@ pub mod Interrupt {
 
     /// Enable or disable AI interrupt.
     pub fn set_AI_interrupt(active: InterruptFlag) {
-        unsafe { bindings::set_AI_interrupt(active as i32); }
+        unsafe { bindings::set_AI_interrupt(active as c_int); }
     }
 
     /// Enable or disable VI interrupt. line is the vertical line that triggers this interrupt.
-    pub fn set_VI_interrupt(active: InterruptFlag, line: u64) {
-        unsafe { bindings::set_VI_interrupt(active as i32, line); }
+    pub fn set_VI_interrupt(active: InterruptFlag, line: c_ulong) {
+        unsafe { bindings::set_VI_interrupt(active as c_int, line); }
     }
 
     /// Enable or disable PI interrupt.
     pub fn set_PI_interrupt(active: InterruptFlag) {
-        unsafe { bindings::set_PI_interrupt(active as i32); }
+        unsafe { bindings::set_PI_interrupt(active as c_int); }
     }
 
     /// Enable or disable DP interrupt.
     pub fn set_DP_interrupt(active: InterruptFlag) {
-        unsafe { bindings::set_DP_interrupt(active as i32); }
+        unsafe { bindings::set_DP_interrupt(active as c_int); }
     }
 
     /// Enable or disable SI interrupt.
     pub fn set_SI_interrupt(active: InterruptFlag) {
-        unsafe { bindings::set_SI_interrupt(active as i32); }
+        unsafe { bindings::set_SI_interrupt(active as c_int); }
     }
 
     /// Enable or disable SP interrupt.
     pub fn set_SP_interrupt(active: InterruptFlag) {
-        unsafe { bindings::set_SP_interrupt(active as i32); }
+        unsafe { bindings::set_SP_interrupt(active as c_int); }
     }
 
     /// Initialize the interrupt controller.
@@ -1720,6 +1728,8 @@ pub mod Interrupt {
 /// provided for both instruction cache and data cache.
 #[allow(dead_code)]
 pub mod N64System {
+    use cty::*;
+
     use crate::bindings;
 
     #[repr(C)]
@@ -1732,41 +1742,41 @@ pub mod N64System {
     /// Number of updates to the count register per second.
     ///
     /// Every second, this many counts will have passed in the count register
-    pub const TICKS_PER_SECOND: u32 = 93750000 / 2;
+    pub const TICKS_PER_SECOND: c_ulong = 93750000 / 2;
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
-    pub fn get_uncached_address(addr: u64) -> *mut () {
+    pub fn get_uncached_address(addr: c_ulong) -> *mut () {
         return bindings::UncachedAddr(addr).cast();
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
-    pub fn get_uncached_short_address(addr: u64) -> *mut i16 {
+    pub fn get_uncached_short_address(addr: c_ulong) -> *mut c_short {
         return bindings::UncachedShortAddr(addr);
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
-    pub fn get_uncached_unsigned_short_address(addr: u64) -> *mut u16 {
+    pub fn get_uncached_unsigned_short_address(addr: c_ulong) -> *mut c_ushort {
         return bindings::UncachedUShortAddr(addr);
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
-    pub fn get_uncached_long_address(addr: u64) -> *mut i64 {
+    pub fn get_uncached_long_address(addr: c_ulong) -> *mut c_long {
         return bindings::UncachedLongAddr(addr);
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
-    pub fn get_uncached_unsigned_long_address(addr: u64) -> *mut u64 {
+    pub fn get_uncached_unsigned_long_address(addr: c_ulong) -> *mut c_ulong {
         return bindings::UncachedULongAddr(addr);
     }
 
     /// Return the cached memory address for a given address.
     #[inline(always)]
-    pub fn get_cached_address(addr: u64) -> *mut () {
+    pub fn get_cached_address(addr: c_ulong) -> *mut () {
         return bindings::CachedAddr(addr).cast();
     }
 
@@ -1786,7 +1796,7 @@ pub mod N64System {
     /// actually being executed. This macro is for reading that value. Do not use
     /// for comparison without special handling.
     #[inline(always)]
-    pub fn get_ticks_read() -> u64 {
+    pub fn get_ticks_read() -> c_ulong {
         return bindings::TICKS_READ();
     }
 
@@ -1795,7 +1805,7 @@ pub mod N64System {
     /// If "from" is before "to", the distance in time is positive,
     /// otherwise it is negative.
     #[inline(always)]
-    pub fn get_ticks_distance(from: u32, to: u32) -> u32 {
+    pub fn get_ticks_distance(from: c_ulong, to: c_ulong) -> c_ulong {
         return bindings::TICKS_DISTANCE(from, to);
     }
 
@@ -1806,30 +1816,30 @@ pub mod N64System {
     /// seconds, so it's not possible to compare times that are more than ~45
     /// seconds apart.
     #[inline(always)]
-    pub fn get_ticks_before(t1: u32, t2: u32) -> bool {
+    pub fn get_ticks_before(t1: c_ulong, t2: c_ulong) -> bool {
         return bindings::TICKS_BEFORE(t1, t2);
     }
 
     ///
     #[inline(always)]
-    pub fn get_ticks_from_ms(val: u32) -> u32 {
+    pub fn get_ticks_from_ms(val: c_ulong) -> c_ulong {
         return bindings::TICKS_FROM_MS(val);
     }
 
     ///
     #[inline(always)]
-    pub fn get_ticks() -> u64 {
+    pub fn get_ticks() -> c_ulong {
         return bindings::get_ticks();
     }
 
     ///
     #[inline(always)]
-    pub fn get_ticks_ms() -> u64 {
+    pub fn get_ticks_ms() -> c_ulong {
         return bindings::get_ticks_ms();
     }
 
     /// Return the boot CIC.
-    pub fn get_boot_cic() -> i32 {
+    pub fn get_boot_cic() -> c_int {
         unsafe { return bindings::sys_get_boot_cic(); }
     }
 
@@ -1837,67 +1847,67 @@ pub mod N64System {
     ///
     /// This function will set the boot CIC. If the value isn't in the range
     /// of 6102-6106, the boot CIC is set to the default of 6102.
-    pub fn set_boot_cic(bc: i32) {
+    pub fn set_boot_cic(bc: c_int) {
         unsafe { bindings::sys_set_boot_cic(bc); }
     }
 
     /// Spin wait until the number of ticks have elapsed.
-    pub fn wait_ticks(wait: u64) {
+    pub fn wait_ticks(wait: c_ulong) {
         unsafe { bindings::wait_ticks(wait); }
     }
 
     /// Spin wait until the number of millisecounds have elapsed.
-    pub fn wait_ms(wait_ms: u64) {
+    pub fn wait_ms(wait_ms: c_ulong) {
         unsafe { bindings::wait_ms(wait_ms); }
     }
 
     /// Force a data cache invalidate over a memory region.
     ///
     /// Use this to force the N64 to update cache from RDRAM.
-    pub fn data_cache_hit_invalidate(addr: *mut (), length: u64) {
+    pub fn data_cache_hit_invalidate(addr: *mut (), length: c_ulong) {
         unsafe { bindings::data_cache_hit_invalidate(addr.cast(), length); }
     }
 
     /// Force a data cache writeback over a memory region.
     ///
     /// Use this to force cached memory to be written to RDRAM.
-    pub fn data_cache_hit_writeback(addr: *mut (), length: u64) {
+    pub fn data_cache_hit_writeback(addr: *mut (), length: c_ulong) {
         unsafe { bindings::data_cache_hit_writeback(addr.cast(), length); }
     }
 
     /// Force a data cache writeback invalidate over a memory region.
     ///
     /// Use this to force cached memory to be written to RDRAM and then cache updated.
-    pub fn data_cache_hit_writeback_invalidate(addr: *mut (), length: u64) {
+    pub fn data_cache_hit_writeback_invalidate(addr: *mut (), length: c_ulong) {
         unsafe { bindings::data_cache_hit_writeback_invalidate(addr.cast(), length); }
     }
 
     /// Force a data cache index writeback invalidate over a memory region.
-    pub fn data_cache_index_writeback_invalidate(addr: *mut (), length: u64) {
+    pub fn data_cache_index_writeback_invalidate(addr: *mut (), length: c_ulong) {
         unsafe { bindings::data_cache_index_writeback_invalidate(addr.cast(), length); }
     }
 
     /// Force an instruction cache writeback over a memory region.
     ///
     /// Use this to force cached memory to be written to RDRAM.
-    pub fn inst_cache_hit_writeback(addr: *mut (), length: u64) {
+    pub fn inst_cache_hit_writeback(addr: *mut (), length: c_ulong) {
         unsafe { bindings::inst_cache_hit_writeback(addr.cast(), length); }
     }
 
     /// Force an instruction cache invalidate over a memory region.
     ///
     /// Use this to force the N64 to update cache from RDRAM.
-    pub fn inst_cache_hit_invalidate(addr: *mut (), length: u64) {
+    pub fn inst_cache_hit_invalidate(addr: *mut (), length: c_ulong) {
         unsafe { bindings::inst_cache_hit_invalidate(addr.cast(), length); }
     }
 
     /// Force an instruction cache index invalidate over a memory region.
-    pub fn inst_cache_index_invalidate(addr: *mut (), length: u64) {
+    pub fn inst_cache_index_invalidate(addr: *mut (), length: c_ulong) {
         unsafe { bindings::inst_cache_index_invalidate(addr.cast(), length); }
     }
 
     /// Get amount of available memory.
-    pub fn get_memory_size() -> i32 {
+    pub fn get_memory_size() -> c_int {
         unsafe { return bindings::get_memory_size(); }
     }
 
@@ -1918,56 +1928,58 @@ pub mod N64System {
 
 /// N64 COP0 Interface.
 pub mod COP0 {
+    use cty::*;
+
     use crate::bindings;
 
-    pub const C0_STATUS_IE: i32 = 0x0000_0001;
-    pub const C0_STATUS_EXL: i32 = 0x0000_0002;
-    pub const C0_STATUS_ERL: i32 = 0x0000_0004;
-    pub const C0_CAUSE_BD: i64 = 0x8000_0000;
-    pub const C0_CAUSE_CE: i32 = 0x3000_0000;
-    pub const C0_CAUSE_EXC_CODE: i32 = 0x0000_007C;
-    pub const C0_INTERRUPT_0: i32 = 0x0000_0100;
-    pub const C0_INTERRUPT_1: i32 = 0x0000_0200;
-    pub const C0_INTERRUPT_RCP: i32 = 0x0000_0400;
-    pub const C0_INTERRUPT_3: i32 = 0x0000_0800;
-    pub const C0_INTERRUPT_4: i32 = 0x0000_1000;
-    pub const C0_INTERRUPT_5: i32 = 0x0000_2000;
-    pub const C0_INTERRUPT_6: i32 = 0x0000_4000;
-    pub const C0_INTERRUPT_TIMER: i32 = 0x0000_8000;
+    pub const C0_STATUS_IE: c_int = 0x0000_0001;
+    pub const C0_STATUS_EXL: c_int = 0x0000_0002;
+    pub const C0_STATUS_ERL: c_int = 0x0000_0004;
+    pub const C0_CAUSE_BD: c_longlong = 0x8000_0000;
+    pub const C0_CAUSE_CE: c_int = 0x3000_0000;
+    pub const C0_CAUSE_EXC_CODE: c_int = 0x0000_007C;
+    pub const C0_INTERRUPT_0: c_int = 0x0000_0100;
+    pub const C0_INTERRUPT_1: c_int = 0x0000_0200;
+    pub const C0_INTERRUPT_RCP: c_int = 0x0000_0400;
+    pub const C0_INTERRUPT_3: c_int = 0x0000_0800;
+    pub const C0_INTERRUPT_4: c_int = 0x0000_1000;
+    pub const C0_INTERRUPT_5: c_int = 0x0000_2000;
+    pub const C0_INTERRUPT_6: c_int = 0x0000_4000;
+    pub const C0_INTERRUPT_TIMER: c_int = 0x0000_8000;
 
     /// Read the COP0 Count register
     #[inline(always)]
-    pub fn COUNT() -> u64 {
+    pub fn COUNT() -> c_ulong {
         return bindings::C0_COUNT();
     }
 
     /// Write the COP0 Count register.
     #[inline(always)]
-    pub fn WRITE_COUNT(x: u64) {
+    pub fn WRITE_COUNT(x: c_ulong) {
         bindings::C0_WRITE_COUNT(x);
     }
 
     /// Read the COP0 Compare register.
     #[inline(always)]
-    pub fn COMPARE() -> u64 {
+    pub fn COMPARE() -> c_ulong {
         return bindings::C0_COMPARE();
     }
 
     /// Write the COP0 Compare register.
     #[inline(always)]
-    pub fn WRITE_COMPARE(x: u64) {
+    pub fn WRITE_COMPARE(x: c_ulong) {
         bindings::C0_WRITE_COMPARE(x);
     }
 
     /// Read the COP0 Status register.
     #[inline(always)]
-    pub fn STATUS() -> u64 {
+    pub fn STATUS() -> c_ulong {
         return bindings::C0_STATUS();
     }
 
     /// Write the COP0 Status register.
     #[inline(always)]
-    pub fn WRITE_STATUS(x: u64) {
+    pub fn WRITE_STATUS(x: c_ulong) {
         bindings::C0_WRITE_STATUS(x);
     }
 
@@ -1977,7 +1989,7 @@ pub mod COP0 {
     /// register keeping pending interrupts, exception code, coprocessor unit number
     /// referenced for a coprocessor unusable exception.
     #[inline(always)]
-    pub fn READ_CR() -> u64 {
+    pub fn READ_CR() -> c_ulong {
         return bindings::C0_READ_CR();
     }
 
@@ -1985,7 +1997,7 @@ pub mod COP0 {
     ///
     /// Use this to update it for a custom exception handler.
     #[inline(always)]
-    pub fn WRITE_CR(x: u64) {
+    pub fn WRITE_CR(x: c_ulong) {
         bindings::C0_WRITE_CR(x);
     }
 
@@ -1995,7 +2007,7 @@ pub mod COP0 {
     /// register holding the last virtual address to be translated which became invalid,
     /// or a virtual address for which an addressing error occurred.
     #[inline(always)]
-    pub fn READ_BADVADDR() -> u64 {
+    pub fn READ_BADVADDR() -> c_ulong {
         return bindings::C0_READ_BADVADDR();
     }
 
@@ -2007,7 +2019,7 @@ pub mod COP0 {
     /// to the instruction causing the fault condition, which needs correction in the
     /// exception handler. This macro is for reading its value.
     #[inline(always)]
-    pub fn READ_EPC() -> u64 {
+    pub fn READ_EPC() -> c_ulong {
         return bindings::C0_READ_EPC();
     }
 
@@ -2016,43 +2028,45 @@ pub mod COP0 {
     /// Gets the Coprocessor unit number referenced by a coprocessor unusable exception
     /// from the given COP0 Status register value.
     #[inline(always)]
-    pub fn GET_CAUSE_CE(cr: i32) -> i32 {
+    pub fn GET_CAUSE_CE(cr: c_int) -> c_int {
         return bindings::C0_GET_CAUSE_CE(cr);
     }
 }
 
 pub mod COP1 {
+    use cty::*;
+
     use crate::bindings;
 
-    pub const C1_FLAG_INEXACT_OP: i32 = 0x0000_0004;
-    pub const C1_FLAG_UNDERFLOW: i32 = 0x0000_0008;
-    pub const C1_FLAG_OVERFLOW: i32 = 0x0000_0010;
-    pub const C1_FLAG_DIV_BY_0: i32 = 0x0000_0020;
-    pub const C1_FLAG_INVALID_OP: i32 = 0x0000_0040;
-    pub const C1_ENABLE_INEXACT_OP: i32 = 0x0000_0080;
-    pub const C1_ENABLE_UNDERFLOW: i32 = 0x0000_0100;
-    pub const C1_ENABLE_OVERFLOW: i32 = 0x0000_0200;
-    pub const C1_ENABLE_DIV_BY_0: i32 = 0x0000_0400;
-    pub const C1_ENABLE_INVALID_OP: i32 = 0x0000_0800;
-    pub const C1_CAUSE_INEXACT_OP: i32 = 0x0000_1000;
-    pub const C1_CAUSE_UNDERFLOW: i32 = 0x0000_2000;
-    pub const C1_CAUSE_OVERFLOW: i32 = 0x0000_4000;
-    pub const C1_CAUSE_DIV_BY_0: i32 = 0x0000_8000;
-    pub const C1_CAUSE_INVALID_OP: i32 = 0x0001_0000;
-    pub const C1_CAUSE_NOT_IMPLEMENTED: i32 = 0x0002_0000;
+    pub const C1_FLAG_INEXACT_OP: c_int = 0x0000_0004;
+    pub const C1_FLAG_UNDERFLOW: c_int = 0x0000_0008;
+    pub const C1_FLAG_OVERFLOW: c_int = 0x0000_0010;
+    pub const C1_FLAG_DIV_BY_0: c_int = 0x0000_0020;
+    pub const C1_FLAG_INVALID_OP: c_int = 0x0000_0040;
+    pub const C1_ENABLE_INEXACT_OP: c_int = 0x0000_0080;
+    pub const C1_ENABLE_UNDERFLOW: c_int = 0x0000_0100;
+    pub const C1_ENABLE_OVERFLOW: c_int = 0x0000_0200;
+    pub const C1_ENABLE_DIV_BY_0: c_int = 0x0000_0400;
+    pub const C1_ENABLE_INVALID_OP: c_int = 0x0000_0800;
+    pub const C1_CAUSE_INEXACT_OP: c_int = 0x0000_1000;
+    pub const C1_CAUSE_UNDERFLOW: c_int = 0x0000_2000;
+    pub const C1_CAUSE_OVERFLOW: c_int = 0x0000_4000;
+    pub const C1_CAUSE_DIV_BY_0: c_int = 0x0000_8000;
+    pub const C1_CAUSE_INVALID_OP: c_int = 0x0001_0000;
+    pub const C1_CAUSE_NOT_IMPLEMENTED: c_int = 0x0002_0000;
 
     /// Read the COP1 FCR31 register (floating-point control register 31)
     ///
     /// FCR31 is also known as the Control/Status register.
     /// It keeps control and status data for the FPU.
     #[inline(always)]
-    pub fn FCR31() -> u64 {
+    pub fn FCR31() -> c_ulong {
         return bindings::C1_FCR31();
     }
 
     /// Write to the COP1 FCR31 register.
     #[inline(always)]
-    pub fn WRITE_FCR31(x: &u64) {
+    pub fn WRITE_FCR31(x: &c_ulong) {
         bindings::C1_WRITE_FCR31(x);
     }
 }
@@ -2095,6 +2109,8 @@ pub mod COP1 {
 /// be enabled for proper operation. This also means that code should under normal
 /// circumstances never use SYNC_FULL.
 pub mod RDP {
+    use cty::*;
+
     use crate::{Display::DisplayContext, GraphicsEngine::{N64Color, Sprite}, bindings};
 
     /// RDP sync operations.
@@ -2159,7 +2175,7 @@ pub mod RDP {
     }
 
     /// Set the hardware clipping boundary.
-    pub fn set_clipping(top_left_x: u32, top_left_y: u32, bottom_right_x: u32, bottom_right_y: u32) {
+    pub fn set_clipping(top_left_x: c_ulong, top_left_y: c_ulong, bottom_right_x: c_ulong, bottom_right_y: c_ulong) {
         unsafe { bindings::rdp_set_clipping(top_left_x, top_left_y, bottom_right_x, bottom_right_y); }
     }
 
@@ -2193,7 +2209,7 @@ pub mod RDP {
     /// Load a sprite into RDP TMEM.
     ///
     /// Returns: number of bytes consumed in RDP TMEM by loading this sprite
-    pub fn load_texture(tex_slot: u32, tex_location: u32, mirror: Mirror, sprite: &mut Sprite) -> u32 {
+    pub fn load_texture(tex_slot: c_ulong, tex_location: c_ulong, mirror: Mirror, sprite: &mut Sprite) -> c_ulong {
         unsafe { return bindings::rdp_load_texture(tex_slot, tex_location, mirror, sprite); }
     }
 
@@ -2204,7 +2220,7 @@ pub mod RDP {
     /// This is useful for treating a large sprite as a tilemap.
     ///
     /// Returns: number of bytes consumed in RDP TMEM by loading this sprite
-    pub fn load_texture_stride(tex_slot: u32, tex_location: u32, mirror: Mirror, sprite: &mut Sprite, offset: i32) -> u32 {
+    pub fn load_texture_stride(tex_slot: c_ulong, tex_location: c_ulong, mirror: Mirror, sprite: &mut Sprite, offset: c_int) -> c_ulong {
         unsafe { return bindings::rdp_load_texture_stride(tex_slot, tex_location, mirror, sprite, offset); }
     }
 
@@ -2216,7 +2232,7 @@ pub mod RDP {
     ///
     /// Before using this command to draw a textured rectangle, use enable_texture_copy()
     /// to set the RDP up in texture mode.
-    pub fn draw_textured_rectangle(tex_slot: u32, top_left_x: i32, top_left_y: i32, bottom_right_x: i32, bottom_right_y: i32, mirror: Mirror) {
+    pub fn draw_textured_rectangle(tex_slot: c_ulong, top_left_x: c_int, top_left_y: c_int, bottom_right_x: c_int, bottom_right_y: c_int, mirror: Mirror) {
         unsafe { bindings::rdp_draw_textured_rectangle(tex_slot, top_left_x, top_left_y, bottom_right_x, bottom_right_y, mirror); }
     }
 
@@ -2230,7 +2246,7 @@ pub mod RDP {
     ///
     /// Before using this command to draw a textured rectangle, use enable_texture_copy()
     /// to set the RDP up in texture mode.
-    pub fn draw_textured_rectangle_scaled(tex_slot: u32, top_left_x: i32, top_left_y: i32, bottom_right_x: i32, bottom_right_y: i32, x_scale: f64, y_scale: f64, mirror: Mirror) {
+    pub fn draw_textured_rectangle_scaled(tex_slot: c_ulong, top_left_x: c_int, top_left_y: c_int, bottom_right_x: c_int, bottom_right_y: c_int, x_scale: f64, y_scale: f64, mirror: Mirror) {
         unsafe { bindings::rdp_draw_textured_rectangle_scaled(tex_slot, top_left_x, top_left_y, bottom_right_x, bottom_right_y, x_scale, y_scale, mirror); }
     }
 
@@ -2241,7 +2257,7 @@ pub mod RDP {
     ///
     /// Before using this command to draw a textured rectangle, use enable_texture_copy()
     /// to set the RDP up in texture mode.
-    pub fn draw_sprite(tex_slot: u32, top_left_x: i32, top_left_y: i32, mirror: Mirror) {
+    pub fn draw_sprite(tex_slot: c_ulong, top_left_x: c_int, top_left_y: c_int, mirror: Mirror) {
         unsafe { bindings::rdp_draw_sprite(tex_slot, top_left_x, top_left_y, mirror); }
     }
 
@@ -2252,7 +2268,7 @@ pub mod RDP {
     ///
     /// Before using this command to draw a textured rectangle, use enable_texture_copy()
     /// to set the RDP up in texture mode.
-    pub fn draw_sprite_scaled(tex_slot: u32, top_left_x: i32, top_left_y: i32, x_scale: f64, y_scale: f64, mirror: Mirror) {
+    pub fn draw_sprite_scaled(tex_slot: c_ulong, top_left_x: c_int, top_left_y: c_int, x_scale: f64, y_scale: f64, mirror: Mirror) {
         unsafe { bindings::rdp_draw_sprite_scaled(tex_slot, top_left_x, top_left_y, x_scale, y_scale, mirror); }
     }
 
@@ -2282,7 +2298,7 @@ pub mod RDP {
     /// to the entire screen, blanking may be unnecessary.
     /// Before calling this function, make sure that the RDP is set to primitive mode by
     /// calling enable_primitive_fill().
-    pub fn draw_filled_rectangle(top_left_x: i32, top_left_y: i32, bottom_right_x: i32, bottom_right_y: i32) {
+    pub fn draw_filled_rectangle(top_left_x: c_int, top_left_y: c_int, bottom_right_x: c_int, bottom_right_y: c_int) {
         unsafe { bindings::rdp_draw_filled_rectangle(top_left_x, top_left_y, bottom_right_x, bottom_right_y); }
     }
 
@@ -2318,6 +2334,8 @@ pub mod RDP {
 
 /// Hardware Vector Interface.
 pub mod RSP {
+    use cty::*;
+
     use crate::bindings;
 
     ///
@@ -2326,22 +2344,22 @@ pub mod RSP {
     }
 
     ///
-    pub fn load_microcode(start: *mut (), size: u64) {
+    pub fn load_microcode(start: *mut (), size: c_ulong) {
         unsafe { bindings::load_ucode(start.cast(), size); }
     }
 
     ///
-    pub fn read_microcode(start: *mut (), size: u64) {
+    pub fn read_microcode(start: *mut (), size: c_ulong) {
         unsafe { bindings::read_ucode(start.cast(), size); }
     }
 
     ///
-    pub fn load_data(start: *mut (), size: u64) {
+    pub fn load_data(start: *mut (), size: c_ulong) {
         unsafe { bindings::load_data(start.cast(), size); }
     }
 
     ///
-    pub fn read_data(start: *mut (), size: u64) {
+    pub fn read_data(start: *mut (), size: c_ulong) {
         unsafe { bindings::read_data(start.cast(), size); }
     }
 
@@ -2385,30 +2403,30 @@ pub mod Timer {
     }
 
     // Timer flags
-    pub const TF_ONE_SHOT: u32 = 0;   // Timer should fire only once.
-    pub const TF_CONTINUOUS: u32 = 1; // Timer should fire at a regular interval
+    pub const TF_ONE_SHOT: c_ulong = 0;   // Timer should fire only once.
+    pub const TF_CONTINUOUS: c_ulong = 1; // Timer should fire at a regular interval
 
     /// Calculate timer ticks based on microseconds.
     #[inline(always)]
-    pub fn TIMER_TICKS(us: i64) -> i32 {
+    pub fn TIMER_TICKS(us: c_longlong) -> c_int {
         return bindings::TIMER_TICKS(us);
     }
 
     /// Calculate microseconds based on timer ticks.
     #[inline(always)]
-    pub fn TIMER_MICROS(tk: i64) -> i32 {
+    pub fn TIMER_MICROS(tk: c_longlong) -> c_int {
         return bindings::TIMER_MICROS(tk);
     }
 
     /// Calculate timer ticks based on microseconds.
     #[inline(always)]
-    pub fn TIMER_TICKS_LL(us: i64) -> i64 {
+    pub fn TIMER_TICKS_LL(us: c_longlong) -> c_longlong {
         return bindings::TIMER_TICKS_LL(us);
     }
 
     /// Calculate microseconds based on timer ticks.
     #[inline(always)]
-    pub fn TIMER_MICROS_LL(tk: i64) -> i64 {
+    pub fn TIMER_MICROS_LL(tk: c_longlong) -> c_longlong {
         return bindings::TIMER_MICROS_LL(tk);
     }
 
@@ -2425,12 +2443,12 @@ pub mod Timer {
     }
 
     /// Create a new timer and add to list.
-    pub fn new_timer(ticks: i32, flags: i32, callback: extern "C" fn(overflow: i32)) -> TimerLink {
+    pub fn new_timer(ticks: c_int, flags: c_int, callback: extern "C" fn(overflow: c_int)) -> TimerLink {
         unsafe { return bindings::new_timer(ticks, flags, callback).read(); }
     }
 
     /// Start a timer not currently in the list.
-    pub fn start_timer(timer: &mut TimerLink, ticks: i32, flags: i32, callback: extern "C" fn(overflow: i32)) {
+    pub fn start_timer(timer: &mut TimerLink, ticks: c_int, flags: c_int, callback: extern "C" fn(overflow: c_int)) {
         unsafe { bindings::start_timer(timer, ticks, flags, callback); }
     }
 
@@ -2455,7 +2473,7 @@ pub mod Timer {
     }
 
     /// Return total ticks since timer was initialized, as a 64-bit counter.
-    pub fn timer_ticks() -> i64 {
+    pub fn timer_ticks() -> c_long {
         unsafe { return bindings::timer_ticks(); }
     }
 }
@@ -2561,20 +2579,20 @@ pub mod Directory {
         pub d_type: c_int
     }
 
-    pub const DT_REG: u32 = 1; // Regular file
-    pub const DT_DIR: u32 = 2; // Directory
+    pub const DT_REG: c_ulong = 1; // Regular file
+    pub const DT_DIR: c_ulong = 2; // Directory
 
     /// Find the first file in a directory.
     ///
     /// Note: Path must be null-terminated.
-    pub fn find_first(path: &[u8], dir: &mut DirType) -> i32 {
+    pub fn find_first(path: &[c_uchar], dir: &mut DirType) -> c_int {
         unsafe { return bindings::dir_findfirst(path.as_ptr().cast(), dir); }
     }
 
     /// Find the next file in a directory.
     ///
     /// Note: Path must be null-terminated.
-    pub fn find_next(path: &[u8], dir: &mut DirType) -> i32 {
+    pub fn find_next(path: &[c_uchar], dir: &mut DirType) -> c_int {
         unsafe { return bindings::dir_findnext(path.as_ptr().cast(), dir); }
     }
 }
