@@ -3,6 +3,8 @@ name = "libdragon-bindings"
 version = "0.1.0"
 authors = ["Dagoth_Bob <bo3b@live.com>"]
 edition = "2018"
+links = "dragon"
+build = "src/build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

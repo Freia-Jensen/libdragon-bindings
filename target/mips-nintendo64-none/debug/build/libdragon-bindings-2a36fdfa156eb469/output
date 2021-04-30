@@ -1,0 +1,2 @@
+cargo:rustc-link-lib=static=dragon
+cargo:rustc-link-search=/usr/local/mips64-elf/lib

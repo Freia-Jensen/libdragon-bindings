@@ -154,7 +154,7 @@ const TICKS_PER_SECOND: c_uint = 93750000 / 2;
 /*
     C function interface
  */
-#[link(name = "libdragon")]
+#[link(name = "dragon")]
 extern "C" {
 
     /*
