@@ -1932,20 +1932,20 @@ pub mod COP0 {
 
     use crate::bindings;
 
-    pub const C0_STATUS_IE: c_int = 0x0000_0001;
-    pub const C0_STATUS_EXL: c_int = 0x0000_0002;
-    pub const C0_STATUS_ERL: c_int = 0x0000_0004;
-    pub const C0_CAUSE_BD: c_longlong = 0x8000_0000;
-    pub const C0_CAUSE_CE: c_int = 0x3000_0000;
-    pub const C0_CAUSE_EXC_CODE: c_int = 0x0000_007C;
-    pub const C0_INTERRUPT_0: c_int = 0x0000_0100;
-    pub const C0_INTERRUPT_1: c_int = 0x0000_0200;
-    pub const C0_INTERRUPT_RCP: c_int = 0x0000_0400;
-    pub const C0_INTERRUPT_3: c_int = 0x0000_0800;
-    pub const C0_INTERRUPT_4: c_int = 0x0000_1000;
-    pub const C0_INTERRUPT_5: c_int = 0x0000_2000;
-    pub const C0_INTERRUPT_6: c_int = 0x0000_4000;
-    pub const C0_INTERRUPT_TIMER: c_int = 0x0000_8000;
+    pub const C0_STATUS_IE: c_ulonglong = 0x0000_0001;
+    pub const C0_STATUS_EXL: c_ulonglong = 0x0000_0002;
+    pub const C0_STATUS_ERL: c_ulonglong = 0x0000_0004;
+    pub const C0_CAUSE_BD: c_ulonglong = 0x8000_0000;
+    pub const C0_CAUSE_CE: c_ulonglong = 0x3000_0000;
+    pub const C0_CAUSE_EXC_CODE: c_ulonglong = 0x0000_007C;
+    pub const C0_INTERRUPT_0: c_ulonglong = 0x0000_0100;
+    pub const C0_INTERRUPT_1: c_ulonglong = 0x0000_0200;
+    pub const C0_INTERRUPT_RCP: c_ulonglong = 0x0000_0400;
+    pub const C0_INTERRUPT_3: c_ulonglong = 0x0000_0800;
+    pub const C0_INTERRUPT_4: c_ulonglong = 0x0000_1000;
+    pub const C0_INTERRUPT_5: c_ulonglong = 0x0000_2000;
+    pub const C0_INTERRUPT_6: c_ulonglong = 0x0000_4000;
+    pub const C0_INTERRUPT_TIMER: c_ulonglong = 0x0000_8000;
 
     /// Read the COP0 Count register
     #[inline(always)]

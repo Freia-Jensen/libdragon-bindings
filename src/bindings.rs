@@ -35,10 +35,10 @@ use crate::{Audio::fill_buffer_callback, Controller::{
     cop0.h defines
  */
 #[inline(always)]
-pub(crate) extern "C" fn C0_COUNT() -> c_ulong {
-    let x: c_ulong;
+pub(crate) extern "C" fn C0_COUNT() -> Volatile<u32> {
+    let x: Volatile<u32>;
     unsafe { asm!("mfc0 {0},$9", out(reg) x); }
-    return x;
+    x
 }
 
 #[inline(always)]
