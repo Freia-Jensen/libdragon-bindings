@@ -1064,6 +1064,7 @@ pub mod Display {
 /// in the cartridge domain as it could collide with an in-progress DMA transfer or run
 /// into caching issues.
 pub mod DMA {
+    use cty::c_void;
     use volatile::Volatile;
 
     use crate::bindings;
@@ -1071,15 +1072,15 @@ pub mod DMA {
     /// Write to a peripheral.
     ///
     /// This function should be used when writing to the cartridge.
-    pub fn write(ram_address_in: *mut (), pi_address: u32, length: u32) {
-        unsafe { bindings::dma_write(ram_address_in.cast(), pi_address, length); }
+    pub fn write(ram_address_in: &mut c_void, pi_address: u32, length: u32) {
+        unsafe { bindings::dma_write(ram_address_in, pi_address, length); }
     }
 
     /// Read from a peripheral.
     ///
     /// This function should be used when reading from the cartridge.
-    pub fn read(ram_address_out: *mut (), pi_address: u32, length: u32) {
-        unsafe { bindings::dma_read(ram_address_out.cast(), pi_address, length); }
+    pub fn read(ram_address_out: &mut c_void, pi_address: u32, length: u32) {
+        unsafe { bindings::dma_read(ram_address_out, pi_address, length); }
     }
 
     /// Return whether the DMA controller is currently busy.
@@ -1305,9 +1306,9 @@ pub mod DragonFS {
     }
 
     /// Read data from a file.
-    pub fn read(buffer_out: *const (), size: i32, count: i32, handle: DFSHandle) -> ReadResult {
+    pub fn read(buffer_out: &c_void, size: i32, count: i32, handle: DFSHandle) -> ReadResult {
         unsafe {
-            return match bindings::dfs_read(buffer_out.cast(), size, count, handle) {
+            return match bindings::dfs_read(buffer_out, size, count, handle) {
                 x @ 0..=c_int::MAX => ReadResult{ num: x },
                 -1 => ReadResult{ error: DFSResult::BadInput},
                 -2 => ReadResult{ error: DFSResult::NoFile},
@@ -1739,6 +1740,7 @@ pub mod Interrupt {
 /// provided for both instruction cache and data cache.
 #[allow(dead_code)]
 pub mod N64System {
+    use cty::c_void;
     use volatile::Volatile;
 
     use crate::bindings;
@@ -1757,8 +1759,8 @@ pub mod N64System {
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
-    pub fn get_uncached_address(addr: u32) -> *mut () {
-        return bindings::UncachedAddr(addr).cast();
+    pub fn get_uncached_address(addr: u32) -> *mut c_void {
+        return bindings::UncachedAddr(addr);
     }
 
     /// Return the uncached memory address for a given address.
@@ -1787,8 +1789,8 @@ pub mod N64System {
 
     /// Return the cached memory address for a given address.
     #[inline(always)]
-    pub fn get_cached_address(addr: u32) -> *mut () {
-        return bindings::CachedAddr(addr).cast();
+    pub fn get_cached_address(addr: u32) -> *mut c_void {
+        return bindings::CachedAddr(addr);
     }
 
     /// Memory barrier to ensure in-order execution.
@@ -1875,46 +1877,46 @@ pub mod N64System {
     /// Force a data cache invalidate over a memory region.
     ///
     /// Use this to force the N64 to update cache from RDRAM.
-    pub fn data_cache_hit_invalidate(addr: *mut (), length: u32) {
-        unsafe { bindings::data_cache_hit_invalidate(Volatile::new(addr.cast()), length); }
+    pub fn data_cache_hit_invalidate(addr: &mut c_void, length: u32) {
+        unsafe { bindings::data_cache_hit_invalidate(Volatile::new(addr), length); }
     }
 
     /// Force a data cache writeback over a memory region.
     ///
     /// Use this to force cached memory to be written to RDRAM.
-    pub fn data_cache_hit_writeback(addr: *mut (), length: u32) {
-        unsafe { bindings::data_cache_hit_writeback(Volatile::new(addr.cast()), length); }
+    pub fn data_cache_hit_writeback(addr: &mut c_void, length: u32) {
+        unsafe { bindings::data_cache_hit_writeback(Volatile::new(addr), length); }
     }
 
     /// Force a data cache writeback invalidate over a memory region.
     ///
     /// Use this to force cached memory to be written to RDRAM and then cache updated.
-    pub fn data_cache_hit_writeback_invalidate(addr: *mut (), length: u32) {
-        unsafe { bindings::data_cache_hit_writeback_invalidate(Volatile::new(addr.cast()), length); }
+    pub fn data_cache_hit_writeback_invalidate(addr: &mut c_void, length: u32) {
+        unsafe { bindings::data_cache_hit_writeback_invalidate(Volatile::new(addr), length); }
     }
 
     /// Force a data cache index writeback invalidate over a memory region.
-    pub fn data_cache_index_writeback_invalidate(addr: *mut (), length: u32) {
-        unsafe { bindings::data_cache_index_writeback_invalidate(Volatile::new(addr.cast()), length); }
+    pub fn data_cache_index_writeback_invalidate(addr: &mut c_void, length: u32) {
+        unsafe { bindings::data_cache_index_writeback_invalidate(Volatile::new(addr), length); }
     }
 
     /// Force an instruction cache writeback over a memory region.
     ///
     /// Use this to force cached memory to be written to RDRAM.
-    pub fn inst_cache_hit_writeback(addr: *mut (), length: u32) {
-        unsafe { bindings::inst_cache_hit_writeback(Volatile::new(addr.cast()), length); }
+    pub fn inst_cache_hit_writeback(addr: &mut c_void, length: u32) {
+        unsafe { bindings::inst_cache_hit_writeback(Volatile::new(addr), length); }
     }
 
     /// Force an instruction cache invalidate over a memory region.
     ///
     /// Use this to force the N64 to update cache from RDRAM.
-    pub fn inst_cache_hit_invalidate(addr: *mut (), length: u32) {
-        unsafe { bindings::inst_cache_hit_invalidate(Volatile::new(addr.cast()), length); }
+    pub fn inst_cache_hit_invalidate(addr: &mut c_void, length: u32) {
+        unsafe { bindings::inst_cache_hit_invalidate(Volatile::new(addr), length); }
     }
 
     /// Force an instruction cache index invalidate over a memory region.
-    pub fn inst_cache_index_invalidate(addr: *mut (), length: u32) {
-        unsafe { bindings::inst_cache_index_invalidate(Volatile::new(addr.cast()), length); }
+    pub fn inst_cache_index_invalidate(addr: &mut c_void, length: u32) {
+        unsafe { bindings::inst_cache_index_invalidate(Volatile::new(addr), length); }
     }
 
     /// Get amount of available memory.
@@ -2349,23 +2351,23 @@ pub mod RSP {
     }
 
     ///
-    pub fn load_microcode(start: *mut (), size: c_ulong) {
-        unsafe { bindings::load_ucode(start.cast(), size); }
+    pub fn load_microcode(start: &mut c_void, size: c_ulong) {
+        unsafe { bindings::load_ucode(start, size); }
     }
 
     ///
-    pub fn read_microcode(start: *mut (), size: c_ulong) {
-        unsafe { bindings::read_ucode(start.cast(), size); }
+    pub fn read_microcode(start: &mut c_void, size: c_ulong) {
+        unsafe { bindings::read_ucode(start, size); }
     }
 
     ///
-    pub fn load_data(start: *mut (), size: c_ulong) {
-        unsafe { bindings::load_data(start.cast(), size); }
+    pub fn load_data(start: &mut c_void, size: c_ulong) {
+        unsafe { bindings::load_data(start, size); }
     }
 
     ///
-    pub fn read_data(start: *mut (), size: c_ulong) {
-        unsafe { bindings::read_data(start.cast(), size); }
+    pub fn read_data(start: &mut c_void, size: c_ulong) {
+        unsafe { bindings::read_data(start, size); }
     }
 
     ///

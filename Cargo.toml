@@ -9,7 +9,7 @@ build = "src/build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cstr_core = "0.2.3"
+cstr_core = {version = "0.2.3", default-features = false}
 bitfield = "0.13.2"
 cty = "0.2.1"
 volatile = "0.4.4"
