@@ -1131,7 +1131,7 @@ pub mod DMA {
 /// Files can be opened using both sets of API calls simultaneously as long
 /// as no more than four files are open at any one time.
 pub mod DragonFS {
-    use cstr_core::CString;
+    use cstr_core::CStr;
     use cty::*;
 
     use crate::bindings;
@@ -1227,9 +1227,9 @@ pub mod DragonFS {
     ///
     /// Note: path must be null-terminated.
     pub fn chdir(path: &str) -> DFSResult {
-        let cstr: *const i8 = CString::new(path).expect("At DragonFS::chdir()").as_ptr();
-
         unsafe {
+            let cstr: *const i8 = CStr::from_ptr(path.as_ptr().cast()).as_ptr();
+
             return match bindings::dfs_chdir(cstr) {
                 0 => DFSResult::Success,
                 -1 => DFSResult::BadInput,
@@ -1250,9 +1250,9 @@ pub mod DragonFS {
     ///
     /// Note: path must be null-terminated.
     pub fn dir_find_first(path: &str, buffer_out: &mut [c_char]) -> Flag_Error {
-        let cstr: *const i8 = CString::new(path).expect("At DragonFS::dir_find_first()").as_ptr();
-
         unsafe {
+            let cstr: *const i8 = CStr::from_ptr(path.as_ptr().cast()).as_ptr();
+
             return match bindings::dfs_dir_findfirst(cstr, buffer_out.as_mut_ptr()) {
                 x @ 0..=3 => Flag_Error { flags: x },
                 -1 => Flag_Error{ error: DFSResult::BadInput },
@@ -1289,9 +1289,9 @@ pub mod DragonFS {
     ///
     /// Note: path must be null-terminated.
     pub fn open(path: &str) -> OpenResult {
-        let cstr: *const i8 = CString::new(path).expect("At DragonFS::open()").as_ptr();
-
         unsafe {
+            let cstr: *const i8 = CStr::from_ptr(path.as_ptr().cast()).as_ptr();
+
             return match bindings::dfs_open(cstr) {
                 -1 => OpenResult{ error: DFSResult::BadInput},
                 -2 => OpenResult{ error: DFSResult::NoFile},
@@ -1419,7 +1419,7 @@ pub mod DragonFS {
 /// make_color() and convert_color() are also compatible with both hardware and software
 /// graphics routines.
 pub mod GraphicsEngine {
-    use cstr_core::CString;
+    use cstr_core::CStr;
     use cty::*;
 
     use crate::{Display::DisplayContext, bindings};
@@ -1519,9 +1519,9 @@ pub mod GraphicsEngine {
     ///
     /// Note: msg must be null-terminated.
     pub fn draw_text(disp: DisplayContext, x: i32, y: i32, msg: &str) {
-        let cstr: *const i8 = CString::new(msg).expect("At GraphicsEngine::draw_text()").as_ptr();
-
         unsafe {
+            let cstr: *const i8 = CStr::from_ptr(msg.as_ptr().cast()).as_ptr();
+
             bindings::graphics_draw_text(disp, x, y, cstr);
         }
     }
