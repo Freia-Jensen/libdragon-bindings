@@ -73,11 +73,12 @@ pub(crate) extern "C" fn C0_READ_EPC() -> uint32_t {
     unsafe { asm!("mfc0 {0},$14", out(reg) x); }
     x
 }
-const C0_CAUSE_CE: u64 = 0x3000_0000;
-const C0_CAUSE_EXC_CODE: u64 = 0x0000_007C;
 
-#[inline(always)] pub(crate) extern "C" fn C0_GET_CAUSE_CE(cr: u64) -> u64 { return ((cr) & C0_CAUSE_CE) >> 28; }
-#[inline(always)] pub(crate) extern "C" fn C0_GET_CAUSE_EXC_CODE(sr: u64) -> u64 { return ((sr) & C0_CAUSE_EXC_CODE) >> 2; }
+macro_rules! C0_CAUSE_CE {() => (0x3000_0000)}
+macro_rules! C0_CAUSE_EXC_CODE {() => (0x0000_007C)}
+
+#[inline(always)] pub(crate) extern "C" fn C0_GET_CAUSE_CE(cr: u64) -> u64 { return ((cr) & C0_CAUSE_CE!()) >> 28; }
+#[inline(always)] pub(crate) extern "C" fn C0_GET_CAUSE_EXC_CODE(sr: u64) -> u64 { return ((sr) & C0_CAUSE_EXC_CODE!()) >> 2; }
 
 /*
     cop1.h defines
@@ -113,13 +114,13 @@ pub(crate) extern "C" fn MEMORY_BARRIER() {
 
 #[inline(always)] pub(crate) extern "C" fn TICKS_READ() -> *const uint32_t { return C0_COUNT(); }
 
-const TICKS_PER_SECOND: uint32_t = 93750000 / 2;
+macro_rules! TICKS_PER_SECOND {() => (93750000 / 2)}
 
 #[inline(always)] pub(crate) extern "C" fn TICKS_DISTANCE(from: uint32_t, to: uint32_t) -> int32_t { return (to - from) as int32_t; }
 #[inline(always)] pub(crate) extern "C" fn TICKS_BEFORE(t1: uint32_t, t2: uint32_t) -> bool { return TICKS_DISTANCE(t1, t2) > 0; }
-#[inline(always)] pub(crate) extern "C" fn TICKS_FROM_MS(val: c_uint) -> uint32_t { return val * (TICKS_PER_SECOND / 1000); }
+#[inline(always)] pub(crate) extern "C" fn TICKS_FROM_MS(val: c_uint) -> uint32_t { return val * (TICKS_PER_SECOND!() / 1000); }
 #[inline(always)] pub(crate) unsafe extern "C" fn get_ticks() -> Volatile<c_ulong> { return Volatile::new((*TICKS_READ()) as u32); }
-#[inline(always)] pub(crate) unsafe extern "C" fn get_ticks_ms() -> Volatile<c_ulong> { return Volatile::new((*TICKS_READ() as u32) / (TICKS_PER_SECOND / 1000) as u32); }
+#[inline(always)] pub(crate) unsafe extern "C" fn get_ticks_ms() -> Volatile<c_ulong> { return Volatile::new((*TICKS_READ() as u32) / (TICKS_PER_SECOND!() / 1000) as u32); }
 
 /*
     timer.h defines
@@ -132,7 +133,7 @@ const TICKS_PER_SECOND: uint32_t = 93750000 / 2;
 /*
     C function interface
  */
-#[link(name = "dragon")]
+#[link(name = "dragon", kind = "static")]
 extern "C" {
 
     /*

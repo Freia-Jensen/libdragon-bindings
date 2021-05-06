@@ -1,4 +1,4 @@
 fn main() {
-    println!("cargo:rustc-link-lib=static=dragon");
-    println!("cargo:rustc-link-search=/usr/local/mips64-elf/lib")
+    println!("cargo:rustc-link-lib=dragon");
+    println!("cargo:rustc-link-search=native=/usr/local/mips64-elf/lib")
 }

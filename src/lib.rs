@@ -150,11 +150,11 @@ pub mod Console {
         RenderAutomatic = 1
     }
 
-    pub const CONSOLE_WIDTH: u64 = 64; // Characters per line for console
-    pub const CONSOLE_HEIGHT: u64 = 28; // Lines per screen
-    pub const TAB_WIDTH: u64 = 4; // Needs to divide evenly into CONSOLE_WIDTH
-    pub const HORIZONTAL_PADDING: u64 = 64;
-    pub const VERTICAL_PADDING: u64 = 8;
+    #[macro_export] macro_rules! CONSOLE_WIDTH {() => (64)}  // Characters per line for console
+    #[macro_export] macro_rules! CONSOLE_HEIGHT {() => (28)} // Lines per screen
+    #[macro_export] macro_rules! TAB_WIDTH {() => (4)}       // Needs to divide evenly into CONSOLE_WIDTH
+    #[macro_export] macro_rules! HORIZONTAL_PADDING {() => (64)}
+    #[macro_export] macro_rules! VERTICAL_PADDING {() => (8)}
 
     /// Initialize the console system. This will initialize the
     /// video properly, so a call to the display_init() function is not necessary.
@@ -326,10 +326,10 @@ pub mod Controller {
         Controller4 = 3
     }
 
-    pub const CONTROLLER_1_INSERTED: u64 = 0xF000;
-    pub const CONTROLLER_2_INSERTED: u64 = 0x0F00;
-    pub const CONTROLLER_3_INSERTED: u64 = 0x00F0;
-    pub const CONTROLLER_4_INSERTED: u64 = 0x000F;
+    #[macro_export] macro_rules! CONTROLLER_1_INSERTED {() => (0xF000)}
+    #[macro_export] macro_rules! CONTROLLER_2_INSERTED {() => (0x0F00)}
+    #[macro_export] macro_rules! CONTROLLER_3_INSERTED {() => (0x00F0)}
+    #[macro_export] macro_rules! CONTROLLER_4_INSERTED {() => (0x000F)}
 
     /// Initialize the controller subsystem.
     pub fn init() {
@@ -614,11 +614,11 @@ pub mod MemoryPak {
         WriteError = -2
     }
 
-    pub const MEMPAK_BLOCK_SIZE: u64 = 256;  // Size in bytes of a mempak block
-    pub const BLOCK_EMPTY: u64 = 0x03;       // Block is empty
-    pub const BLOCK_LAST: u64 = 0x01;        // Last block in the note
-    pub const BLOCK_VALID_FIRST: u64 = 0x05; // First valid block that can contain user data
-    pub const BLOCK_VALID_LAST: u64 = 0x7F;  // Last valid block that can contain user data
+    #[macro_export] macro_rules! MEMPAK_BLOCK_SIZE {() => (256)}  // Size in bytes of a mempak block
+    #[macro_export] macro_rules! BLOCK_EMPTY {() => (0x03)}       // Block is empty
+    #[macro_export] macro_rules! BLOCK_LAST {() => (0x01)}        // Last block in the note
+    #[macro_export] macro_rules! BLOCK_VALID_FIRST {() => (0x05)} // First valid block that can contain user data
+    #[macro_export] macro_rules! BLOCK_VALID_LAST {() => (0x7F)}  // Last valid block that can contain user data
 
     /// This will read a sector from a mempak. Sectors on mempaks are always 256 bytes in size.
     pub fn read_sector(controller: ControllerNum, sector: i32, sector_data_out: &mut [u8]) -> ReadSectorResult {
@@ -987,6 +987,7 @@ pub mod TransferPak {
     }
 }
 
+/// Display Subsystem
 pub mod Display {
     use cty::*;
 
@@ -1191,16 +1192,16 @@ pub mod DragonFS {
         pub size: c_int
     }
 
-    pub const DFS_DEFAULT_LOCATION: u64 = 0xB0101000;
-    pub const MAX_OPEN_FILES: u64 = 4;
-    pub const MAX_FILENAME_LEN: u64 = 243;
-    pub const MAX_DIRECTORY_DEPTH: u64 = 100;
-    pub const FLAGS_FILE: u64 = 0x0;
-    pub const FLAGS_DIR: u64 = 0x1;
-    pub const FLAGS_EOF: u64 = 0x2;
+    #[macro_export] macro_rules! DFS_DEFAULT_LOCATION {() => (0xB0101000)}
+    #[macro_export] macro_rules! MAX_OPEN_FILES {() => (4)}
+    #[macro_export] macro_rules! MAX_FILENAME_LEN {() => (243)}
+    #[macro_export] macro_rules! MAX_DIRECTORY_DEPTH {() => (100)}
+    #[macro_export] macro_rules! FLAGS_FILE {() => (0x0)}
+    #[macro_export] macro_rules! FLAGS_DIR {() => (0x1)}
+    #[macro_export] macro_rules! FLAGS_EOF {() => (0x2)}
 
     /// Macro to extract the file type from a DragonFS file flag.
-    #[inline(always)] pub extern "C" fn FILETYPE(x: u64) -> u64 { return x & 3; }
+    #[macro_export] macro_rules! FILETYPE {($x:expr) => (x & 3)}
 
     /// Initialize the filesystem.
     ///
@@ -1424,7 +1425,6 @@ pub mod GraphicsEngine {
     use cty::*;
 
     use crate::{Display::DisplayContext, bindings};
-
 
     #[repr(C)]
     pub struct RGBColor {
@@ -1755,7 +1755,7 @@ pub mod N64System {
     /// Number of updates to the count register per second.
     ///
     /// Every second, this many counts will have passed in the count register
-    pub const TICKS_PER_SECOND: u64 = 93750000 / 2;
+    #[macro_export] macro_rules! TICKS_PER_SECOND {() => (93750000 / 2)}
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
@@ -1943,20 +1943,20 @@ pub mod N64System {
 pub mod COP0 {
     use crate::bindings;
 
-    pub const C0_STATUS_IE: u64 = 0x0000_0001;
-    pub const C0_STATUS_EXL: u64 = 0x0000_0002;
-    pub const C0_STATUS_ERL: u64 = 0x0000_0004;
-    pub const C0_CAUSE_BD: u64 = 0x8000_0000;
-    pub const C0_CAUSE_CE: u64 = 0x3000_0000;
-    pub const C0_CAUSE_EXC_CODE: u64 = 0x0000_007C;
-    pub const C0_INTERRUPT_0: u64 = 0x0000_0100;
-    pub const C0_INTERRUPT_1: u64 = 0x0000_0200;
-    pub const C0_INTERRUPT_RCP: u64 = 0x0000_0400;
-    pub const C0_INTERRUPT_3: u64 = 0x0000_0800;
-    pub const C0_INTERRUPT_4: u64 = 0x0000_1000;
-    pub const C0_INTERRUPT_5: u64 = 0x0000_2000;
-    pub const C0_INTERRUPT_6: u64 = 0x0000_4000;
-    pub const C0_INTERRUPT_TIMER: u64 = 0x0000_8000;
+    #[macro_export] macro_rules! C0_STATUS_IE {() => (0x0000_0001)}
+    #[macro_export] macro_rules! C0_STATUS_EXL {() => (0x0000_0002)}
+    #[macro_export] macro_rules! C0_STATUS_ERL {() => (0x0000_0004)}
+    #[macro_export] macro_rules! C0_CAUSE_BD {() => (0x8000_0000)}
+    #[macro_export] macro_rules! C0_CAUSE_CE {() => (0x3000_0000)}
+    #[macro_export] macro_rules! C0_CAUSE_EXC_CODE {() => (0x0000_007C)}
+    #[macro_export] macro_rules! C0_INTERRUPT_0 {() => (0x0000_0100)}
+    #[macro_export] macro_rules! C0_INTERRUPT_1 {() => (0x0000_0200)}
+    #[macro_export] macro_rules! C0_INTERRUPT_RCP {() => (0x0000_0400)}
+    #[macro_export] macro_rules! C0_INTERRUPT_3 {() => (0x0000_0800)}
+    #[macro_export] macro_rules! C0_INTERRUPT_4 {() => (0x0000_1000)}
+    #[macro_export] macro_rules! C0_INTERRUPT_5 {() => (0x0000_2000)}
+    #[macro_export] macro_rules! C0_INTERRUPT_6 {() => (0x0000_4000)}
+    #[macro_export] macro_rules! C0_INTERRUPT_TIMER {() => (0x0000_8000)}
 
     /// Read the COP0 Count register
     #[inline(always)]
@@ -2047,22 +2047,22 @@ pub mod COP0 {
 pub mod COP1 {
     use crate::bindings;
 
-    pub const C1_FLAG_INEXACT_OP: u64 = 0x0000_0004;
-    pub const C1_FLAG_UNDERFLOW: u64 = 0x0000_0008;
-    pub const C1_FLAG_OVERFLOW: u64 = 0x0000_0010;
-    pub const C1_FLAG_DIV_BY_0: u64 = 0x0000_0020;
-    pub const C1_FLAG_INVALID_OP: u64 = 0x0000_0040;
-    pub const C1_ENABLE_INEXACT_OP: u64 = 0x0000_0080;
-    pub const C1_ENABLE_UNDERFLOW: u64 = 0x0000_0100;
-    pub const C1_ENABLE_OVERFLOW: u64 = 0x0000_0200;
-    pub const C1_ENABLE_DIV_BY_0: u64 = 0x0000_0400;
-    pub const C1_ENABLE_INVALID_OP: u64 = 0x0000_0800;
-    pub const C1_CAUSE_INEXACT_OP: u64 = 0x0000_1000;
-    pub const C1_CAUSE_UNDERFLOW: u64 = 0x0000_2000;
-    pub const C1_CAUSE_OVERFLOW: u64 = 0x0000_4000;
-    pub const C1_CAUSE_DIV_BY_0: u64 = 0x0000_8000;
-    pub const C1_CAUSE_INVALID_OP: u64 = 0x0001_0000;
-    pub const C1_CAUSE_NOT_IMPLEMENTED: u64 = 0x0002_0000;
+    #[macro_export] macro_rules! C1_FLAG_INEXACT_OP {() => (0x0000_0004)}
+    #[macro_export] macro_rules! C1_FLAG_UNDERFLOW {() => (0x0000_0008)}
+    #[macro_export] macro_rules! C1_FLAG_OVERFLOW {() => (0x0000_0010)}
+    #[macro_export] macro_rules! C1_FLAG_DIV_BY_0 {() => (0x0000_0020)}
+    #[macro_export] macro_rules! C1_FLAG_INVALID_OP {() => (0x0000_0040)}
+    #[macro_export] macro_rules! C1_ENABLE_INEXACT_OP {() => (0x0000_0080)}
+    #[macro_export] macro_rules! C1_ENABLE_UNDERFLOW {() => (0x0000_0100)}
+    #[macro_export] macro_rules! C1_ENABLE_OVERFLOW {() => (0x0000_0200)}
+    #[macro_export] macro_rules! C1_ENABLE_DIV_BY_0 {() => (0x0000_0400)}
+    #[macro_export] macro_rules! C1_ENABLE_INVALID_OP {() => (0x0000_0800)}
+    #[macro_export] macro_rules! C1_CAUSE_INEXACT_OP {() => (0x0000_1000)}
+    #[macro_export] macro_rules! C1_CAUSE_UNDERFLOW {() => (0x0000_2000)}
+    #[macro_export] macro_rules! C1_CAUSE_OVERFLOW {() => (0x0000_4000)}
+    #[macro_export] macro_rules! C1_CAUSE_DIV_BY_0 {() => (0x0000_8000)}
+    #[macro_export] macro_rules! C1_CAUSE_INVALID_OP {() => (0x0001_0000)}
+    #[macro_export] macro_rules! C1_CAUSE_NOT_IMPLEMENTED {() => (0x0002_0000)}
 
     /// Read the COP1 FCR31 register (floating-point control register 31)
     ///
@@ -2410,8 +2410,8 @@ pub mod Timer {
     }
 
     // Timer flags
-    pub const TF_ONE_SHOT: c_ulong = 0;   // Timer should fire only once.
-    pub const TF_CONTINUOUS: c_ulong = 1; // Timer should fire at a regular interval
+    #[macro_export] macro_rules! TF_ONE_SHOT {() => (0)}   // Timer should fire only once.
+    #[macro_export] macro_rules! TF_CONTINUOUS {() => (1)} // Timer should fire at a regular interval
 
     /// Calculate timer ticks based on microseconds.
     #[inline(always)]
@@ -2586,8 +2586,8 @@ pub mod Directory {
         pub d_type: c_int
     }
 
-    pub const DT_REG: c_ulong = 1; // Regular file
-    pub const DT_DIR: c_ulong = 2; // Directory
+    #[macro_export] macro_rules! DT_REG {() => (1)} // Regular file
+    #[macro_export] macro_rules! DT_DIR {() => (2)} // Directory
 
     /// Find the first file in a directory.
     ///
