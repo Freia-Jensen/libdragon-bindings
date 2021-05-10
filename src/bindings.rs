@@ -3,8 +3,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use core::sync::atomic::{Ordering, compiler_fence};
-use cty::{c_char, c_double, c_float, c_int, c_long, c_longlong, c_short, c_uchar, c_uint, c_ulong, c_ushort, c_void, int32_t, uint16_t, uint32_t, uint8_t};
+use cty::{c_char, c_double, c_float, c_int, c_long, c_short, c_uchar, c_ulong, c_void, uint16_t, uint32_t, uint8_t};
 use volatile::Volatile;
 
 use crate::{Audio::fill_buffer_callback, Controller::{ControllerData, ControllerOriginData, N64Controller, GCController}, Directory::{DirType}, Display::{AntiAlias, BitDepth, DisplayContext, Gamma, Resolution}, Exceptions::{Exception, ExceptionCode, ExceptionType, RegisterBlock}, GraphicsEngine::{RGBColor, Sprite}, Interrupt::{InterruptState}, MemoryPak::{EntryStructure}, N64System::{TVType}, RDP::{Sync, Flush, Mirror}, Timer::{TimerLink}, TransferPak::{GBCSupportType, GBCTitle, GameboyCartridgeHeader, NewTitle, OldTitle}};
@@ -12,123 +11,168 @@ use crate::{Audio::fill_buffer_callback, Controller::{ControllerData, Controller
 /*
     cop0.h defines
  */
-#[inline(always)]
-pub(crate) extern "C" fn C0_COUNT() -> *const uint32_t {
-    let x: *mut uint32_t = core::ptr::null_mut();
-    unsafe { asm!("mfc0 {0},$9", out(reg) (*x)); }
-    x
+#[macro_export]
+macro_rules! C0_COUNT {
+    ($x:expr) => { unsafe { asm!("mfc0 {0},$9", out(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_WRITE_COUNT(x: uint32_t) {
-    unsafe { asm!("mtc0 {0},$9", in(reg) x); }
+#[macro_export]
+macro_rules! C0_WRITE_COUNT {
+    ($x: expr) => { unsafe { asm!("mtc0 {0},$9", in(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_COMPARE() -> uint32_t {
-    let x: uint32_t;
-    unsafe { asm!("mfc0 {0},$11", out(reg) x); }
-    x
+#[macro_export]
+macro_rules! C0_COMPARE {
+    ($x: expr) => { unsafe { asm!("mfc0 {0},$11", out(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_WRITE_COMPARE(x: uint32_t) {
-    unsafe { asm!("mtc0 {0},$11", in(reg) x); }
+#[macro_export]
+macro_rules! C0_WRITE_COMPARE {
+    ($x: expr) => { unsafe { asm!("mtc0 {0},$11", in(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_STATUS() -> uint32_t {
-    let x: uint32_t;
-    unsafe { asm!("mfc0 {0},$12", out(reg) x); }
-    x
+#[macro_export]
+macro_rules! C0_STATUS {
+    ($x: expr) => { unsafe { asm!("mfc0 {0},$12", out(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_WRITE_STATUS(x: uint32_t) {
-    unsafe { asm!("mtc0 {0},$12", in(reg) x); }
+#[macro_export]
+macro_rules! C0_WRITE_STATUS {
+    ($x: expr) => { unsafe { asm!("mtc0 {0},$12", in(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_READ_CR() -> uint32_t {
-    let x: uint32_t;
-    unsafe { asm!("mfc0 {0},$13", out(reg) x); }
-    x
+#[macro_export]
+macro_rules! C0_READ_CR {
+    ($x: expr) => { unsafe { asm!("mfc0 {0},$13", out(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_WRITE_CR(x: uint32_t) {
-    unsafe { asm!("mtc0 {0},$13", in(reg) x); }
+#[macro_export]
+macro_rules! C0_WRITE_CR {
+    ($x: expr) => { unsafe { asm!("mtc0 {0},$13", in(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_READ_BADVADDR() -> uint32_t {
-    let x: uint32_t;
-    unsafe { asm!("mfc0 {0},$8", out(reg) x); }
-    x
+#[macro_export]
+macro_rules! C0_READ_BADVADDR {
+    ($x: expr) => { unsafe { asm!("mfc0 {0},$8", out(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C0_READ_EPC() -> uint32_t {
-    let x: uint32_t;
-    unsafe { asm!("mfc0 {0},$14", out(reg) x); }
-    x
+#[macro_export]
+macro_rules! C0_READ_EPC {
+    ($x: expr) => { unsafe { asm!("mfc0 {0},$14", out(reg) $x); }}
 }
 
-macro_rules! C0_CAUSE_CE {() => (0x3000_0000)}
-macro_rules! C0_CAUSE_EXC_CODE {() => (0x0000_007C)}
+#[macro_export]
+macro_rules! C0_GET_CAUSE_CE {
+    ($cr: expr) => {  (($cr) & 0x3000_0000) >> 28; }
+}
 
-#[inline(always)] pub(crate) extern "C" fn C0_GET_CAUSE_CE(cr: u64) -> u64 { return ((cr) & C0_CAUSE_CE!()) >> 28; }
-#[inline(always)] pub(crate) extern "C" fn C0_GET_CAUSE_EXC_CODE(sr: u64) -> u64 { return ((sr) & C0_CAUSE_EXC_CODE!()) >> 2; }
+#[macro_export]
+macro_rules! C0_GET_CAUSE_EXC_CODE {
+    ($sr: expr) => {  (($sr) & 0x0000_007C) >> 2; }
+}
 
 /*
     cop1.h defines
  */
-#[inline(always)]
-pub(crate) extern "C" fn C1_FCR31() -> uint32_t {
-    let x: uint32_t;
-    unsafe { asm!("cfc1 {0},$f31", out(reg) x); }
-    x
+#[macro_export]
+macro_rules! C1_FCR31 {
+    ($x: expr) => { unsafe { asm!("cfc1 {0},$f31", out(reg) $x); }}
 }
 
-#[inline(always)]
-pub(crate) extern "C" fn C1_WRITE_FCR31(x: uint32_t) {
-    unsafe { asm!("ctc1 {0},$f31", in(reg) x); }
+#[macro_export]
+macro_rules! C1_WRITE_FCR31 {
+    ($x: expr) => { unsafe { asm!("ctc1 {0},$f31", in(reg) $x); }}
 }
 
 /*
     n64sys.h defines
  */
-#[inline(always)] pub(crate) extern "C" fn UncachedAddr(_addr: c_ulong) -> *mut c_void { return (_addr | 0x20000000) as *mut c_void; }
-#[inline(always)] pub(crate) extern "C" fn UncachedShortAddr(_addr: c_ulong) -> *mut c_short { return (_addr | 0x20000000) as *mut c_short; }
-#[inline(always)] pub(crate) extern "C" fn UncachedUShortAddr(_addr: c_ulong) -> *mut c_ushort { return (_addr | 0x20000000) as *mut c_ushort; }
-#[inline(always)] pub(crate) extern "C" fn UncachedLongAddr(_addr: c_ulong) -> *mut c_long { return (_addr | 0x20000000) as *mut c_long; }
-#[inline(always)] pub(crate) extern "C" fn UncachedULongAddr(_addr: c_ulong) -> *mut c_ulong { return (_addr | 0x20000000) as *mut c_ulong; }
-#[inline(always)] pub(crate) extern "C" fn CachedAddr(_addr: c_ulong) -> *mut c_void { return (_addr &!0x20000000) as *mut c_void; }
-
-#[inline(always)]
-pub(crate) extern "C" fn MEMORY_BARRIER() {
-    compiler_fence(Ordering::Release);
-    compiler_fence(Ordering::Acquire);
-    compiler_fence(Ordering::AcqRel);
+#[macro_export]
+macro_rules! UncachedAddr {
+    ($addr:expr) => { ($addr | 0x20000000) as *mut cty::c_void; }
 }
 
-#[inline(always)] pub(crate) extern "C" fn TICKS_READ() -> *const uint32_t { return C0_COUNT(); }
+#[macro_export]
+macro_rules! UncachedShortAddr {
+    ($addr:expr) => { ($addr | 0x20000000) as *mut cty::c_short; }
+}
 
-macro_rules! TICKS_PER_SECOND {() => (93750000 / 2)}
+#[macro_export]
+macro_rules! UncachedUShortAddr {
+    ($addr:expr) => { ($addr | 0x20000000) as *mut cty::c_ushort; }
+}
 
-#[inline(always)] pub(crate) extern "C" fn TICKS_DISTANCE(from: uint32_t, to: uint32_t) -> int32_t { return (to - from) as int32_t; }
-#[inline(always)] pub(crate) extern "C" fn TICKS_BEFORE(t1: uint32_t, t2: uint32_t) -> bool { return TICKS_DISTANCE(t1, t2) > 0; }
-#[inline(always)] pub(crate) extern "C" fn TICKS_FROM_MS(val: c_uint) -> uint32_t { return val * (TICKS_PER_SECOND!() / 1000); }
-#[inline(always)] pub(crate) unsafe extern "C" fn get_ticks() -> Volatile<c_ulong> { return Volatile::new((*TICKS_READ()) as u32); }
-#[inline(always)] pub(crate) unsafe extern "C" fn get_ticks_ms() -> Volatile<c_ulong> { return Volatile::new((*TICKS_READ() as u32) / (TICKS_PER_SECOND!() / 1000) as u32); }
+#[macro_export]
+macro_rules! UncachedLongAddr {
+    ($addr:expr) => { ($addr | 0x20000000) as *mut cty::c_long; }
+}
+
+#[macro_export]
+macro_rules! UncachedULongAddr {
+    ($addr:expr) => { ($addr | 0x20000000) as *mut cty::c_ulong; }
+}
+
+#[macro_export]
+macro_rules! CachedAddr {
+    ($addr:expr) => { ($addr &!0x20000000) as *mut cty::c_void; }
+}
+
+#[macro_export]
+macro_rules! MEMORY_BARRIER {
+    () => {
+        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::Release);
+        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::Acquire);
+        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::AcqRel);
+    }
+}
+
+#[macro_export]
+macro_rules! TICKS_READ {
+    ($x:expr) => { (crate::C0_COUNT!($x)) }
+}
+
+#[macro_export]
+macro_rules! TICKS_DISTANCE {
+    ($from:expr, $to:expr) => { (($to - $from) as cty::int32_t) }
+}
+
+#[macro_export]
+macro_rules! TICKS_BEFORE {
+    ($t1:expr, $t2:expr) => { (crate::TICKS_DISTANCE!($t1, $t2) > 0) }
+}
+
+#[macro_export]
+macro_rules! TICKS_FROM_MS {
+    ($val:expr) => { ($val * (crate::TICKS_PER_SECOND!() / 1000)) }
+}
+
+#[macro_export]
+macro_rules! get_ticks {
+    ($x:expr) => { (crate::TICKS_READ!($x)) }
+}
 
 /*
     timer.h defines
  */
-#[inline(always)] pub(crate) extern "C" fn TIMER_TICKS(us: c_longlong) -> c_int { return (us * (46875 / 1000 as c_longlong)) as c_int; }
-#[inline(always)] pub(crate) extern "C" fn TIMER_MICROS(tk: c_longlong) -> c_int { return (tk * (1000 / 46875 as c_longlong)) as c_int; }
-#[inline(always)] pub(crate) extern "C" fn TIMER_TICKS_LL(us: c_longlong) -> c_longlong { return us * 46875 / 1000; }
-#[inline(always)] pub(crate) extern "C" fn TIMER_MICROS_LL(tk: c_longlong) -> c_longlong { return tk * 1000 / 46875; }
+#[macro_export]
+macro_rules! TIMER_TICKS {
+    ($us:expr) => { (($us * (46875 / 1000 as cty::c_longlong)) as cty::c_int) }
+}
+
+#[macro_export]
+macro_rules! TIMER_MICROS {
+    ($tk:expr) => { (($tk * (1000 / 46875 as cty::c_longlong)) as cty::c_int) }
+}
+
+#[macro_export]
+macro_rules! TIMER_TICKS_LL {
+    ($us:expr) => { ($us * 46875 / 1000) }
+}
+
+#[macro_export]
+macro_rules! TIMER_MICROS_LL {
+    ($tk:expr) => { ($tk * 1000 / 46875) }
+}
 
 /*
     C function interface
@@ -438,46 +482,46 @@ extern "C" {
         interrupt.h functions
      */
     // void register_AI_handler( void (*callback)() );
-    pub(crate) fn register_AI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn register_AI_handler(callback: Option<extern "C" fn()>);
 
     // void register_VI_handler( void (*callback)() );
-    pub(crate) fn register_VI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn register_VI_handler(callback: Option<extern "C" fn()>);
 
     // void register_PI_handler( void (*callback)() );
-    pub(crate) fn register_PI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn register_PI_handler(callback: Option<extern "C" fn()>);
 
     // void register_DP_handler( void (*callback)() );
-    pub(crate) fn register_DP_handler(callback: *mut extern "C" fn());
+    pub(crate) fn register_DP_handler(callback: Option<extern "C" fn()>);
 
     // void register_TI_handler( void (*callback)() );
-    pub(crate) fn register_TI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn register_TI_handler(callback: Option<extern "C" fn()>);
 
     // void register_SI_handler( void (*callback)() );
-    pub(crate) fn register_SI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn register_SI_handler(callback: Option<extern "C" fn()>);
 
     // void register_SP_handler( void (*callback)() );
-    pub(crate) fn register_SP_handler(callback: *mut extern "C" fn());
+    pub(crate) fn register_SP_handler(callback: Option<extern "C" fn()>);
 
     // void unregister_AI_handler( void (*callback)() );
-    pub(crate) fn unregister_AI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn unregister_AI_handler(callback: Option<extern "C" fn()>);
 
     // void unregister_VI_handler( void (*callback)() );
-    pub(crate) fn unregister_VI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn unregister_VI_handler(callback: Option<extern "C" fn()>);
 
     // void unregister_PI_handler( void (*callback)() );
-    pub(crate) fn unregister_PI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn unregister_PI_handler(callback: Option<extern "C" fn()>);
 
     // void unregister_DP_handler( void (*callback)() );
-    pub(crate) fn unregister_DP_handler(callback: *mut extern "C" fn());
+    pub(crate) fn unregister_DP_handler(callback: Option<extern "C" fn()>);
 
     // void unregister_TI_handler( void (*callback)() );
-    pub(crate) fn unregister_TI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn unregister_TI_handler(callback: Option<extern "C" fn()>);
 
     // void unregister_SI_handler( void (*callback)() );
-    pub(crate) fn unregister_SI_handler(callback: *mut extern "C" fn());
+    pub(crate) fn unregister_SI_handler(callback: Option<extern "C" fn()>);
 
     // void unregister_SP_handler( void (*callback)() );
-    pub(crate) fn unregister_SP_handler(callback: *mut extern "C" fn());
+    pub(crate) fn unregister_SP_handler(callback: Option<extern "C" fn()>);
 
     // void set_AI_interrupt( int active );
     pub(crate) fn set_AI_interrupt(active: c_int);
@@ -648,10 +692,10 @@ extern "C" {
     pub(crate) fn timer_init();
 
     // timer_link_t *new_timer(int ticks, int flags, void (*callback)(int ovfl));
-    pub(crate) fn new_timer(ticks: c_int, flags: c_int, callback: extern "C" fn(ovfl: c_int)) -> *mut timer_link_t;
+    pub(crate) fn new_timer(ticks: c_int, flags: c_int, callback: Option<extern "C" fn(ovfl: c_int)>) -> *mut timer_link_t;
 
     // void start_timer(timer_link_t *timer, int ticks, int flags, void (*callback)(int ovfl));
-    pub(crate) fn start_timer(timer: *mut timer_link_t, ticks: c_int, flags: c_int, callback: extern "C" fn(ovfl: c_int));
+    pub(crate) fn start_timer(timer: *mut timer_link_t, ticks: c_int, flags: c_int, callback: Option<extern "C" fn(ovfl: c_int)>);
 
     // void stop_timer(timer_link_t *timer);
     pub(crate) fn stop_timer(timer: *mut timer_link_t);
@@ -669,7 +713,7 @@ extern "C" {
         exception.h functions
      */
     // void register_exception_handler( void (*cb)(exception_t *) );
-    pub(crate) fn register_exception_handler(cb: extern "C" fn(*mut exception_t));
+    pub(crate) fn register_exception_handler(cb: Option<extern "C" fn(*mut exception_t)>);
 
     // void exception_default_handler( exception_t* ex );
     pub(crate) fn exception_default_handler(ex: *mut exception_t);

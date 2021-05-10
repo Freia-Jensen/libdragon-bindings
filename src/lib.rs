@@ -44,7 +44,7 @@ pub mod Audio {
     use crate::bindings;
 
     pub type Frequency = c_int;
-    pub type fill_buffer_callback = extern "C" fn(buffer: *mut c_short, numsamples: size_t);
+    pub type fill_buffer_callback = Option<extern "C" fn(buffer: *mut c_short, numsamples: size_t)>;
 
     /// Initialize the audio subsystem.
     ///
@@ -1140,8 +1140,6 @@ pub mod DragonFS {
 
     pub type DFSHandle = uint32_t;
 
-    #[repr(i32)]
-    #[derive(Clone, Copy)]
     pub enum DFSResult {
         Success = 0,
         BadInput = -1,
@@ -1149,47 +1147,6 @@ pub mod DragonFS {
         BadFS = -3,
         NoMem = -4,
         BadHandle = -5
-    }
-
-    /// FILE = 0b0000
-    /// DIR =  0b0001
-    /// EOF =  0b0010
-    #[repr(C)]
-    pub union Flag_Error {
-        pub error: DFSResult,
-        pub flags: c_int
-    }
-
-    /// EOF = 1
-    /// Not_EOF = 0
-    #[repr(C)]
-    pub union EOFResult {
-        pub error: DFSResult,
-        pub eof: c_int
-    }
-
-    #[repr(C)]
-    pub union OpenResult {
-        pub error: DFSResult,
-        pub handle: DFSHandle
-    }
-
-    #[repr(C)]
-    pub union ReadResult {
-        pub error: DFSResult,
-        pub num: c_int
-    }
-
-    #[repr(C)]
-    pub union TellResult {
-        pub error: DFSResult,
-        pub offset: c_int
-    }
-
-    #[repr(C)]
-    pub union SizeResult {
-        pub error: DFSResult,
-        pub size: c_int
     }
 
     #[macro_export] macro_rules! DFS_DEFAULT_LOCATION {() => (0xB0101000)}
@@ -1251,17 +1208,17 @@ pub mod DragonFS {
     /// and copies the name into buffer.
     ///
     /// Note: path must be null-terminated.
-    pub fn dir_find_first(path: &str, buffer_out: &mut [c_char]) -> Flag_Error {
+    pub fn dir_find_first(path: &str, buffer_out: &mut [c_char]) -> Result<i32, DFSResult> {
         unsafe {
             let cstr: *const i8 = CStr::from_ptr(path.as_ptr().cast()).as_ptr();
 
             return match bindings::dfs_dir_findfirst(cstr, buffer_out.as_mut_ptr()) {
-                x @ 0..=3 => Flag_Error { flags: x },
-                -1 => Flag_Error{ error: DFSResult::BadInput },
-                -2 => Flag_Error{ error: DFSResult::NoFile },
-                -3 => Flag_Error{ error: DFSResult::BadFS },
-                -4 => Flag_Error{ error: DFSResult::NoMem },
-                -5 => Flag_Error{ error: DFSResult::BadHandle },
+                x @ 0..=3 => Ok(x),
+                -1 => Err(DFSResult::BadInput),
+                -2 => Err(DFSResult::NoFile),
+                -3 => Err(DFSResult::BadFS),
+                -4 => Err(DFSResult::NoMem),
+                -5 => Err(DFSResult::BadHandle),
                 bad => panic!("Invalid result from DragonFS::dir_find_first(): {}", bad)
             };
         }
@@ -1270,15 +1227,15 @@ pub mod DragonFS {
     /// Find the next file or directory in a directory listing.
     ///
     /// Note: Should be called after doing a dir_find_first().
-    pub fn dir_find_next(buffer_out: &mut str) -> Flag_Error {
+    pub fn dir_find_next(buffer_out: &mut str) -> Result<i32, DFSResult> {
         unsafe {
             return match bindings::dfs_dir_findnext(buffer_out.as_mut_ptr().cast()) {
-                x @ 0..=3 => Flag_Error { flags: x },
-                -1 => Flag_Error{ error: DFSResult::BadInput },
-                -2 => Flag_Error{ error: DFSResult::NoFile },
-                -3 => Flag_Error{ error: DFSResult::BadFS },
-                -4 => Flag_Error{ error: DFSResult::NoMem },
-                -5 => Flag_Error{ error: DFSResult::BadHandle },
+                x @ 0..=3 => Ok(x),
+                -1 => Err(DFSResult::BadInput),
+                -2 => Err(DFSResult::NoFile),
+                -3 => Err(DFSResult::BadFS),
+                -4 => Err(DFSResult::NoMem),
+                -5 => Err(DFSResult::BadHandle),
                 bad => panic!("Invalid result from DragonFS::dir_find_next(): {}", bad)
             };
         }
@@ -1290,32 +1247,32 @@ pub mod DragonFS {
     /// the file specified. Supports absolute and relative paths
     ///
     /// Note: path must be null-terminated.
-    pub fn open(path: &str) -> OpenResult {
+    pub fn open(path: &str) -> Result<u32, DFSResult> {
         unsafe {
             let cstr: *const i8 = CStr::from_ptr(path.as_ptr().cast()).as_ptr();
 
             return match bindings::dfs_open(cstr) {
-                -1 => OpenResult{ error: DFSResult::BadInput},
-                -2 => OpenResult{ error: DFSResult::NoFile},
-                -3 => OpenResult{ error: DFSResult::BadFS},
-                -4 => OpenResult{ error: DFSResult::NoMem},
-                -5 => OpenResult{ error: DFSResult::BadHandle},
+                -1 => Err(DFSResult::BadInput),
+                -2 => Err(DFSResult::NoFile),
+                -3 => Err(DFSResult::BadFS),
+                -4 => Err(DFSResult::NoMem),
+                -5 => Err(DFSResult::BadHandle),
                 x @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::open(): {}", x),
-                val => OpenResult{ handle: val as u32}
+                val => Ok(val as u32)
             };
         }
     }
 
     /// Read data from a file.
-    pub fn read(buffer_out: &c_void, size: i32, count: i32, handle: DFSHandle) -> ReadResult {
+    pub fn read(buffer_out: &c_void, size: i32, count: i32, handle: DFSHandle) -> Result<i32, DFSResult> {
         unsafe {
             return match bindings::dfs_read(buffer_out, size, count, handle) {
-                x @ 0..=c_int::MAX => ReadResult{ num: x },
-                -1 => ReadResult{ error: DFSResult::BadInput},
-                -2 => ReadResult{ error: DFSResult::NoFile},
-                -3 => ReadResult{ error: DFSResult::BadFS},
-                -4 => ReadResult{ error: DFSResult::NoMem},
-                -5 => ReadResult{ error: DFSResult::BadHandle},
+                x @ 0..=c_int::MAX => Ok(x),
+                -1 => Err(DFSResult::BadInput),
+                -2 => Err(DFSResult::NoFile),
+                -3 => Err(DFSResult::BadFS),
+                -4 => Err(DFSResult::NoMem),
+                -5 => Err(DFSResult::BadHandle),
                 bad => panic!("Invalid result from DragonFS::read(): {}", bad)
             }
         }
@@ -1337,16 +1294,16 @@ pub mod DragonFS {
     }
 
     /// Return the current offset into a file.
-    pub fn tell(handle: DFSHandle) -> TellResult {
+    pub fn tell(handle: DFSHandle) -> Result<i32, DFSResult> {
         unsafe {
             return match bindings::dfs_tell(handle) {
-                -1 => TellResult{ error: DFSResult::BadInput},
-                -2 => TellResult{ error: DFSResult::NoFile},
-                -3 => TellResult{ error: DFSResult::BadFS},
-                -4 => TellResult{ error: DFSResult::NoMem},
-                -5 => TellResult{ error: DFSResult::BadHandle},
-                x @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::tell(): {}", x),
-                bad => TellResult{ offset: bad }
+                -1 => Err(DFSResult::BadInput),
+                -2 => Err(DFSResult::NoFile),
+                -3 => Err(DFSResult::BadFS),
+                -4 => Err(DFSResult::NoMem),
+                -5 => Err(DFSResult::BadHandle),
+                bad @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::tell(): {}", bad),
+                x => Ok(x)
             };
         }
     }
@@ -1367,32 +1324,32 @@ pub mod DragonFS {
     }
 
     /// Return whether the end of file has been reached.
-    pub fn eof(handle: DFSHandle) -> EOFResult {
+    pub fn eof(handle: DFSHandle) -> Result<bool, DFSResult> {
         unsafe {
             return match bindings::dfs_eof(handle) {
-                1 => EOFResult{ eof: 1 },
-                0 => EOFResult{ eof: 0 },
-                -1 => EOFResult{ error: DFSResult::BadInput },
-                -2 => EOFResult{ error: DFSResult::NoFile },
-                -3 => EOFResult{ error: DFSResult::BadFS },
-                -4 => EOFResult{ error: DFSResult::NoMem },
-                -5 => EOFResult{ error: DFSResult::BadHandle },
+                1 => Ok(true),
+                0 => Ok(false),
+                -1 => Err(DFSResult::BadInput),
+                -2 => Err(DFSResult::NoFile),
+                -3 => Err(DFSResult::BadFS),
+                -4 => Err(DFSResult::NoMem),
+                -5 => Err(DFSResult::BadHandle),
                 bad => panic!("Invalid result from DragonFS::eof(): {}", bad)
             };
         }
     }
 
     /// Return the size of an open file.
-    pub fn size(handle: DFSHandle) -> SizeResult {
+    pub fn size(handle: DFSHandle) -> Result<i32, DFSResult> {
         unsafe {
             return match bindings::dfs_size(handle) {
-                -1 => SizeResult{ error: DFSResult::BadInput},
-                -2 => SizeResult{ error: DFSResult::NoFile},
-                -3 => SizeResult{ error: DFSResult::BadFS},
-                -4 => SizeResult{ error: DFSResult::NoMem},
-                -5 => SizeResult{ error: DFSResult::BadHandle},
-                x @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::size(): {}", x),
-                bad => SizeResult{ size: bad }
+                -1 => Err(DFSResult::BadInput),
+                -2 => Err(DFSResult::NoFile),
+                -3 => Err(DFSResult::BadFS),
+                -4 => Err(DFSResult::NoMem),
+                -5 => Err(DFSResult::BadHandle),
+                bad @ c_int::MIN..=-6 => panic!("Invalid result from DragonFS::size(): {}", bad),
+                x => Ok(x)
             };
         }
     }
@@ -1600,73 +1557,73 @@ pub mod Interrupt {
     pub type InterruptFlag = bool;
 
     /// Register an AI callback.
-    pub fn register_AI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::register_AI_handler(callback); }
+    pub fn register_AI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::register_AI_handler(Some(callback)); }
     }
 
     /// Register a VI callback.
-    pub fn register_VI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::register_VI_handler(callback); }
+    pub fn register_VI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::register_VI_handler(Some(callback)); }
     }
 
     /// Register a PI callback.
-    pub fn register_PI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::register_PI_handler(callback); }
+    pub fn register_PI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::register_PI_handler(Some(callback)); }
     }
 
     /// Register a DP callback.
-    pub fn register_DP_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::register_DP_handler(callback); }
+    pub fn register_DP_handler(callback: extern "C" fn()) {
+        unsafe { bindings::register_DP_handler(Some(callback)); }
     }
 
     /// Register a TI callback.
-    pub fn register_TI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::register_TI_handler(callback); }
+    pub fn register_TI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::register_TI_handler(Some(callback)); }
     }
 
     /// Register an SI callback.
-    pub fn register_SI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::register_SI_handler(callback); }
+    pub fn register_SI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::register_SI_handler(Some(callback)); }
     }
 
     /// Register an SP callback.
-    pub fn register_SP_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::register_SP_handler(callback); }
+    pub fn register_SP_handler(callback: extern "C" fn()) {
+        unsafe { bindings::register_SP_handler(Some(callback)); }
     }
 
     /// Unregister an AI callback.
-    pub fn unregister_AI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::unregister_AI_handler(callback); }
+    pub fn unregister_AI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::unregister_AI_handler(Some(callback)); }
     }
 
     /// Unregister a VI callback.
-    pub fn unregister_VI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::unregister_VI_handler(callback); }
+    pub fn unregister_VI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::unregister_VI_handler(Some(callback)); }
     }
 
     /// Unregister a PI callback.
-    pub fn unregister_PI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::unregister_PI_handler(callback); }
+    pub fn unregister_PI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::unregister_PI_handler(Some(callback)); }
     }
 
     /// Unregister a DP callback.
-    pub fn unregister_DP_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::unregister_DP_handler(callback); }
+    pub fn unregister_DP_handler(callback: extern "C" fn()) {
+        unsafe { bindings::unregister_DP_handler(Some(callback)); }
     }
 
     /// Unregister a TI callback.
-    pub fn unregister_TI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::unregister_TI_handler(callback); }
+    pub fn unregister_TI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::unregister_TI_handler(Some(callback)); }
     }
 
     /// Unregister an SI callback.
-    pub fn unregister_SI_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::unregister_SI_handler(callback); }
+    pub fn unregister_SI_handler(callback: extern "C" fn()) {
+        unsafe { bindings::unregister_SI_handler(Some(callback)); }
     }
 
     /// Unregister an SP callback.
-    pub fn unregister_SP_handler(callback: &mut extern "C" fn()) {
-        unsafe { bindings::unregister_SP_handler(callback); }
+    pub fn unregister_SP_handler(callback: extern "C" fn()) {
+        unsafe { bindings::unregister_SP_handler(Some(callback)); }
     }
 
     /// Enable or disable AI interrupt.
@@ -1755,48 +1712,51 @@ pub mod N64System {
     /// Number of updates to the count register per second.
     ///
     /// Every second, this many counts will have passed in the count register
-    #[macro_export] macro_rules! TICKS_PER_SECOND {() => (93750000 / 2)}
+    #[macro_export]
+    macro_rules! TICKS_PER_SECOND {
+        () => { (93750000 / 2)}
+    }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
     pub fn get_uncached_address(addr: u32) -> *mut c_void {
-        return bindings::UncachedAddr(addr);
+        return crate::UncachedAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
     pub fn get_uncached_short_address(addr: u32) -> *mut i16 {
-        return bindings::UncachedShortAddr(addr);
+        return crate::UncachedShortAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
     pub fn get_uncached_unsigned_short_address(addr: u32) -> *mut u16 {
-        return bindings::UncachedUShortAddr(addr);
+        return crate::UncachedUShortAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
     pub fn get_uncached_long_address(addr: u32) -> *mut i32 {
-        return bindings::UncachedLongAddr(addr);
+        return crate::UncachedLongAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
     #[inline(always)]
     pub fn get_uncached_unsigned_long_address(addr: u32) -> *mut u32 {
-        return bindings::UncachedULongAddr(addr);
+        return crate::UncachedULongAddr!(addr);
     }
 
     /// Return the cached memory address for a given address.
     #[inline(always)]
     pub fn get_cached_address(addr: u32) -> *mut c_void {
-        return bindings::CachedAddr(addr);
+        return crate::CachedAddr!(addr);
     }
 
     /// Memory barrier to ensure in-order execution.
     #[inline(always)]
     pub fn MEMORY_BARRIER() {
-        bindings::MEMORY_BARRIER();
+        crate::MEMORY_BARRIER!();
     }
 
     /// Returns the COP0 register $9 (count).
@@ -1810,7 +1770,9 @@ pub mod N64System {
     /// for comparison without special handling.
     #[inline(always)]
     pub fn get_ticks_read() -> u32 {
-        unsafe { return *bindings::TICKS_READ() };
+        let x: u32;
+        crate::TICKS_READ!(x);
+        return x;
     }
 
     /// The signed difference of time between "from" and "to".
@@ -1819,7 +1781,7 @@ pub mod N64System {
     /// otherwise it is negative.
     #[inline(always)]
     pub fn get_ticks_distance(from: u32, to: u32) -> i32 {
-        return bindings::TICKS_DISTANCE(from, to);
+        return crate::TICKS_DISTANCE!(from, to);
     }
 
     /// Returns true if "t1" is before "t2".
@@ -1830,25 +1792,29 @@ pub mod N64System {
     /// seconds apart.
     #[inline(always)]
     pub fn get_ticks_before(t1: u32, t2: u32) -> bool {
-        return bindings::TICKS_BEFORE(t1, t2);
+        return crate::TICKS_BEFORE!(t1, t2);
     }
 
     ///
     #[inline(always)]
     pub fn get_ticks_from_ms(val: u32) -> u32 {
-        return bindings::TICKS_FROM_MS(val);
+        return crate::TICKS_FROM_MS!(val);
     }
 
     ///
     #[inline(always)]
     pub fn get_ticks() -> Volatile<u32> {
-        unsafe { return bindings::get_ticks() };
+        let x: u32;
+        crate::get_ticks!(x);
+        return Volatile::new(x);
     }
 
     ///
     #[inline(always)]
     pub fn get_ticks_ms() -> Volatile<u32> {
-        unsafe { return bindings::get_ticks_ms() };
+        let x: u32;
+        crate::TICKS_READ!(x);
+        return Volatile::new(x / (crate::TICKS_PER_SECOND!() / 1000));
     }
 
     /// Return the boot CIC.
@@ -1941,8 +1907,6 @@ pub mod N64System {
 
 /// N64 COP0 Interface.
 pub mod COP0 {
-    use crate::bindings;
-
     #[macro_export] macro_rules! C0_STATUS_IE {() => (0x0000_0001)}
     #[macro_export] macro_rules! C0_STATUS_EXL {() => (0x0000_0002)}
     #[macro_export] macro_rules! C0_STATUS_ERL {() => (0x0000_0004)}
@@ -1959,39 +1923,39 @@ pub mod COP0 {
     #[macro_export] macro_rules! C0_INTERRUPT_TIMER {() => (0x0000_8000)}
 
     /// Read the COP0 Count register
-    #[inline(always)]
     pub fn COUNT() -> u32 {
-        unsafe { return *bindings::C0_COUNT() };
+        let x: u32;
+        crate::C0_COUNT!(x);
+        return x;
     }
 
     /// Write the COP0 Count register.
-    #[inline(always)]
     pub fn WRITE_COUNT(x: u32) {
-        bindings::C0_WRITE_COUNT(x);
+        crate::C0_WRITE_COUNT!(x);
     }
 
     /// Read the COP0 Compare register.
-    #[inline(always)]
     pub fn COMPARE() -> u32 {
-        return bindings::C0_COMPARE();
+        let x: u32;
+        crate::C0_COMPARE!(x);
+        return x;
     }
 
     /// Write the COP0 Compare register.
-    #[inline(always)]
     pub fn WRITE_COMPARE(x: u32) {
-        bindings::C0_WRITE_COMPARE(x);
+        crate::C0_WRITE_COMPARE!(x);
     }
 
     /// Read the COP0 Status register.
-    #[inline(always)]
     pub fn STATUS() -> u32 {
-        return bindings::C0_STATUS();
+        let x: u32;
+        crate::C0_STATUS!(x);
+        return x;
     }
 
     /// Write the COP0 Status register.
-    #[inline(always)]
     pub fn WRITE_STATUS(x: u32) {
-        bindings::C0_WRITE_STATUS(x);
+        crate::C0_WRITE_STATUS!(x);
     }
 
     /// Returns the COP0 register $13 (Cause Register)
@@ -1999,17 +1963,17 @@ pub mod COP0 {
     /// The coprocessor 0 (system control coprocessor - COP0) register $13 is a read write
     /// register keeping pending interrupts, exception code, coprocessor unit number
     /// referenced for a coprocessor unusable exception.
-    #[inline(always)]
     pub fn READ_CR() -> u32 {
-        return bindings::C0_READ_CR();
+        let x: u32;
+        crate::C0_READ_CR!(x);
+        return x;
     }
 
     /// Write the COP0 register $13 (Cause register)
     ///
     /// Use this to update it for a custom exception handler.
-    #[inline(always)]
     pub fn WRITE_CR(x: u32) {
-        bindings::C0_WRITE_CR(x);
+        crate::C0_WRITE_CR!(x);
     }
 
     /// Returns the COP0 register $8 (BadVAddr)
@@ -2017,9 +1981,10 @@ pub mod COP0 {
     /// The coprocessor 0 (system control coprocessor - COP0) register $8 is a read only
     /// register holding the last virtual address to be translated which became invalid,
     /// or a virtual address for which an addressing error occurred.
-    #[inline(always)]
     pub fn READ_BADVADDR() -> u32 {
-        return bindings::C0_READ_BADVADDR();
+        let x: u32;
+        crate::C0_READ_BADVADDR!(x);
+        return x;
     }
 
     /// Read the COP0 register $14 (EPC)
@@ -2031,7 +1996,9 @@ pub mod COP0 {
     /// exception handler. This macro is for reading its value.
     #[inline(always)]
     pub fn READ_EPC() -> u32 {
-        return bindings::C0_READ_EPC();
+        let x: u32;
+        crate::C0_READ_EPC!(x);
+        return x;
     }
 
     /// Get the CE value from the COP0 status register.
@@ -2040,13 +2007,11 @@ pub mod COP0 {
     /// from the given COP0 Status register value.
     #[inline(always)]
     pub fn GET_CAUSE_CE(cr: u64) -> u64 {
-        return bindings::C0_GET_CAUSE_CE(cr);
+        return crate::C0_GET_CAUSE_CE!(cr);
     }
 }
 
 pub mod COP1 {
-    use crate::bindings;
-
     #[macro_export] macro_rules! C1_FLAG_INEXACT_OP {() => (0x0000_0004)}
     #[macro_export] macro_rules! C1_FLAG_UNDERFLOW {() => (0x0000_0008)}
     #[macro_export] macro_rules! C1_FLAG_OVERFLOW {() => (0x0000_0010)}
@@ -2070,13 +2035,15 @@ pub mod COP1 {
     /// It keeps control and status data for the FPU.
     #[inline(always)]
     pub fn FCR31() -> u32 {
-        return bindings::C1_FCR31();
+        let x: u32;
+        crate::C1_FCR31!(x);
+        return x;
     }
 
     /// Write to the COP1 FCR31 register.
     #[inline(always)]
     pub fn WRITE_FCR31(x: u32) {
-        bindings::C1_WRITE_FCR31(x);
+        crate::C1_WRITE_FCR31!(x);
     }
 }
 
@@ -2416,25 +2383,25 @@ pub mod Timer {
     /// Calculate timer ticks based on microseconds.
     #[inline(always)]
     pub fn TIMER_TICKS(us: c_longlong) -> c_int {
-        return bindings::TIMER_TICKS(us);
+        return crate::TIMER_TICKS!(us);
     }
 
     /// Calculate microseconds based on timer ticks.
     #[inline(always)]
     pub fn TIMER_MICROS(tk: c_longlong) -> c_int {
-        return bindings::TIMER_MICROS(tk);
+        return crate::TIMER_MICROS!(tk);
     }
 
     /// Calculate timer ticks based on microseconds.
     #[inline(always)]
     pub fn TIMER_TICKS_LL(us: c_longlong) -> c_longlong {
-        return bindings::TIMER_TICKS_LL(us);
+        return crate::TIMER_TICKS_LL!(us);
     }
 
     /// Calculate microseconds based on timer ticks.
     #[inline(always)]
     pub fn TIMER_MICROS_LL(tk: c_longlong) -> c_longlong {
-        return bindings::TIMER_MICROS_LL(tk);
+        return crate::TIMER_MICROS_LL!(tk);
     }
 
     /// Initialize the timer subsystem.
@@ -2450,13 +2417,13 @@ pub mod Timer {
     }
 
     /// Create a new timer and add to list.
-    pub fn new_timer(ticks: c_int, flags: c_int, callback: extern "C" fn(overflow: c_int)) -> TimerLink {
-        unsafe { return bindings::new_timer(ticks, flags, callback).read(); }
+    pub fn new_timer(ticks: c_int, flags: c_int, callback: extern "C" fn(overflow: c_int)) -> Option<&'static TimerLink> {
+        unsafe { return bindings::new_timer(ticks, flags, Some(callback)).as_ref(); }
     }
 
     /// Start a timer not currently in the list.
     pub fn start_timer(timer: &mut TimerLink, ticks: c_int, flags: c_int, callback: extern "C" fn(overflow: c_int)) {
-        unsafe { bindings::start_timer(timer, ticks, flags, callback); }
+        unsafe { bindings::start_timer(timer, ticks, flags, Some(callback)); }
     }
 
     /// Stop a timer and remove it from the list.
@@ -2565,7 +2532,7 @@ pub mod Exceptions {
     /// f21-f31 are callee-saved. In the future we may consider removing them from the save state for
     /// interrupts (but not for exceptions)
     pub fn register_exception_handler(callback: extern "C" fn(*mut Exception)) {
-        unsafe { bindings::register_exception_handler(callback); }
+        unsafe { bindings::register_exception_handler(Some(callback)); }
     }
 
     ///
