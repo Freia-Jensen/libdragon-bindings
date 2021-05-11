@@ -76,12 +76,12 @@ macro_rules! C0_GET_CAUSE_EXC_CODE {
  */
 #[macro_export]
 macro_rules! C1_FCR31 {
-    ($x: expr) => { unsafe { asm!("cfc1 {0},$f31", out(reg) $x); }}
+    ($x: expr) => { unsafe { asm!("cfc1 {0},$31", out(reg) $x); }}
 }
 
 #[macro_export]
 macro_rules! C1_WRITE_FCR31 {
-    ($x: expr) => { unsafe { asm!("ctc1 {0},$f31", in(reg) $x); }}
+    ($x: expr) => { unsafe { asm!("ctc1 {0},$31", in(reg) $x); }}
 }
 
 /*

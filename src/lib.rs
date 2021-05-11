@@ -1718,43 +1718,36 @@ pub mod N64System {
     }
 
     /// Return the uncached memory address for a given address.
-    #[inline(always)]
     pub fn get_uncached_address(addr: u32) -> *mut c_void {
         return crate::UncachedAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
-    #[inline(always)]
     pub fn get_uncached_short_address(addr: u32) -> *mut i16 {
         return crate::UncachedShortAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
-    #[inline(always)]
     pub fn get_uncached_unsigned_short_address(addr: u32) -> *mut u16 {
         return crate::UncachedUShortAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
-    #[inline(always)]
     pub fn get_uncached_long_address(addr: u32) -> *mut i32 {
         return crate::UncachedLongAddr!(addr);
     }
 
     /// Return the uncached memory address for a given address.
-    #[inline(always)]
     pub fn get_uncached_unsigned_long_address(addr: u32) -> *mut u32 {
         return crate::UncachedULongAddr!(addr);
     }
 
     /// Return the cached memory address for a given address.
-    #[inline(always)]
     pub fn get_cached_address(addr: u32) -> *mut c_void {
         return crate::CachedAddr!(addr);
     }
 
     /// Memory barrier to ensure in-order execution.
-    #[inline(always)]
     pub fn MEMORY_BARRIER() {
         crate::MEMORY_BARRIER!();
     }
@@ -1768,7 +1761,6 @@ pub mod N64System {
     /// in 91.625 seconds. The counter will increment irrespective of instructions
     /// actually being executed. This macro is for reading that value. Do not use
     /// for comparison without special handling.
-    #[inline(always)]
     pub fn get_ticks_read() -> u32 {
         let x: u32;
         crate::TICKS_READ!(x);
@@ -1779,7 +1771,6 @@ pub mod N64System {
     ///
     /// If "from" is before "to", the distance in time is positive,
     /// otherwise it is negative.
-    #[inline(always)]
     pub fn get_ticks_distance(from: u32, to: u32) -> i32 {
         return crate::TICKS_DISTANCE!(from, to);
     }
@@ -1790,19 +1781,16 @@ pub mod N64System {
     /// which are very frequent. Notice that the N64 counter overflows every ~91
     /// seconds, so it's not possible to compare times that are more than ~45
     /// seconds apart.
-    #[inline(always)]
     pub fn get_ticks_before(t1: u32, t2: u32) -> bool {
         return crate::TICKS_BEFORE!(t1, t2);
     }
 
     ///
-    #[inline(always)]
     pub fn get_ticks_from_ms(val: u32) -> u32 {
         return crate::TICKS_FROM_MS!(val);
     }
 
     ///
-    #[inline(always)]
     pub fn get_ticks() -> Volatile<u32> {
         let x: u32;
         crate::get_ticks!(x);
@@ -1810,7 +1798,6 @@ pub mod N64System {
     }
 
     ///
-    #[inline(always)]
     pub fn get_ticks_ms() -> Volatile<u32> {
         let x: u32;
         crate::TICKS_READ!(x);
@@ -1994,7 +1981,6 @@ pub mod COP0 {
     /// to continue execution whereas for synchronous (caused by code) exceptions, point
     /// to the instruction causing the fault condition, which needs correction in the
     /// exception handler. This macro is for reading its value.
-    #[inline(always)]
     pub fn READ_EPC() -> u32 {
         let x: u32;
         crate::C0_READ_EPC!(x);
@@ -2005,7 +1991,6 @@ pub mod COP0 {
     ///
     /// Gets the Coprocessor unit number referenced by a coprocessor unusable exception
     /// from the given COP0 Status register value.
-    #[inline(always)]
     pub fn GET_CAUSE_CE(cr: u64) -> u64 {
         return crate::C0_GET_CAUSE_CE!(cr);
     }
@@ -2033,7 +2018,6 @@ pub mod COP1 {
     ///
     /// FCR31 is also known as the Control/Status register.
     /// It keeps control and status data for the FPU.
-    #[inline(always)]
     pub fn FCR31() -> u32 {
         let x: u32;
         crate::C1_FCR31!(x);
@@ -2041,7 +2025,6 @@ pub mod COP1 {
     }
 
     /// Write to the COP1 FCR31 register.
-    #[inline(always)]
     pub fn WRITE_FCR31(x: u32) {
         crate::C1_WRITE_FCR31!(x);
     }
@@ -2381,25 +2364,21 @@ pub mod Timer {
     #[macro_export] macro_rules! TF_CONTINUOUS {() => (1)} // Timer should fire at a regular interval
 
     /// Calculate timer ticks based on microseconds.
-    #[inline(always)]
     pub fn TIMER_TICKS(us: c_longlong) -> c_int {
         return crate::TIMER_TICKS!(us);
     }
 
     /// Calculate microseconds based on timer ticks.
-    #[inline(always)]
     pub fn TIMER_MICROS(tk: c_longlong) -> c_int {
         return crate::TIMER_MICROS!(tk);
     }
 
     /// Calculate timer ticks based on microseconds.
-    #[inline(always)]
     pub fn TIMER_TICKS_LL(us: c_longlong) -> c_longlong {
         return crate::TIMER_TICKS_LL!(us);
     }
 
     /// Calculate microseconds based on timer ticks.
-    #[inline(always)]
     pub fn TIMER_MICROS_LL(tk: c_longlong) -> c_longlong {
         return crate::TIMER_MICROS_LL!(tk);
     }
